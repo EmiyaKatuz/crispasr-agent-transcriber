@@ -1,8 +1,8 @@
-# crispasr-agent-transcriber setup
+﻿# crispasr-agent-transcriber setup
 # Downloads CrispASR binary and prints model download instructions.
 # Usage: .\scripts\setup.ps1
 #
-# This is a thin wrapper — the real logic lives in crispasr_manager.py.
+# This is a thin wrapper -- the real logic lives in crispasr_manager.py.
 # Run it standalone or via:
 #   uv run python scripts/transcribe.py --install-crispasr
 
@@ -21,16 +21,16 @@ Write-Host ""
 Write-Host "=== Next: download models ==="
 Write-Host ""
 Write-Host "English ASR (Cohere Transcribe 03-2026):"
-Write-Host "  Recommended: cohere-transcribe-03-2026-q4_k.gguf"
+Write-Host "  Recommended: cohere-transcribe.gguf (~3.9 GB)"
 Write-Host "  Browse: https://huggingface.co/cstr"
 Write-Host ""
 Write-Host "Chinese ASR (Qwen3-ASR 1.7B):"
-Write-Host "  Recommended: qwen3-asr-1.7b-q4_k.gguf"
+Write-Host "  Recommended: qwen3-asr-1.7b-q4_k.gguf (~1.3 GB)"
 Write-Host "  Browse: https://huggingface.co/cstr/qwen3-asr-1.7b-GGUF"
 Write-Host ""
-Write-Host "Language detection (Silero LID 95 languages):"
-Write-Host "  Recommended: silero-lid-95-f16.gguf (~1.5 MB)"
-Write-Host "  Browse: https://huggingface.co/cstr/silero-lid-95-GGUF"
+Write-Host "Language detection (FireRed LID):"
+Write-Host "  Recommended: firered-lid-q2_k.gguf (~350 MB)"
+Write-Host "  Browse: https://huggingface.co/cstr/firered-lid-GGUF"
 Write-Host ""
-Write-Host "Place model files in the `models/` directory at the repository root.
+Write-Host "Place model files in the `models/` directory at the repository root."
 Write-Host "Then pass --model models\<file>.gguf when transcribing."

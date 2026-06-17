@@ -28,3 +28,6 @@ Thumbs.db
 
 # CrispASR binary
 bin/
+
+# CPU build backup
+bin-cpu-backup/

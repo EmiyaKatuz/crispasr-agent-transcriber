@@ -1,4 +1,4 @@
-# crispasr-agent-transcriber
+﻿# crispasr-agent-transcriber
 
 Local-only transcription for Codex and MCP-based AI agents, powered by
 [CrispASR](https://github.com/CrispStrobe/CrispASR). No cloud uploads,
@@ -8,7 +8,7 @@ no API keys required for transcription.
 
 Give it a local audio or video file. It:
 
-1. Probes the spoken language (English or Chinese).
+1. Probes the spoken language (English or Chinese) using CrispASR's FireRed LID.
 2. Starts a local CrispASR server with the right backend -- Cohere Transcribe
    for English, Qwen3-ASR for Chinese.
 3. Extracts audio from video with ffmpeg when needed.
@@ -29,13 +29,14 @@ cd crispasr-agent-transcriber
 # Install Python dependencies
 uv sync --extra dev
 
-# Install the CrispASR binary (auto-detects GPU)
+# Install the CrispASR binary (auto-detects GPU: CUDA > Vulkan > CPU)
 uv run python scripts/transcribe.py --install-crispasr
 
 # Transcribe a file
-uv run python scripts/transcribe.py sample.mp4 --profile auto \
-  --manage-server \
-  --lid-model models\silero-lid-95-f16.gguf \
+uv run python scripts/transcribe.py sample.mp4 --profile auto `
+  --manage-server `
+  --lid-backend firered --lid-model models\firered-lid-q2_k.gguf `
+  --model models\cohere-transcribe.gguf `
   --format verbose_json
 ```
 
@@ -44,19 +45,20 @@ Or run `.\scripts\setup.ps1` for a guided first-time setup.
 ## Required models
 
 This tool does **not** download models automatically. Download these three
-GGUF files and keep them outside the repository:
+GGUF files and keep them in a local directory (the repo's `models/` folder
+works well):
 
-| Purpose | File | Size | Source |
+| Purpose | File | ~Size | Source |
 |---|---|---|---|
-| English ASR | `cohere-transcribe-03-2026-q4_k.gguf` | ~1.5 GB | [cstr on HuggingFace](https://huggingface.co/cstr) |
-| Chinese ASR | `qwen3-asr-1.7b-q4_k.gguf` | ~1 GB | [qwen3-asr-1.7b-GGUF](https://huggingface.co/cstr/qwen3-asr-1.7b-GGUF) |
-| Language detection | `silero-lid-95-f16.gguf` | ~1.5 MB | [silero-lid-95-GGUF](https://huggingface.co/cstr/silero-lid-95-GGUF) |
+| English ASR | `cohere-transcribe.gguf` | 3.9 GB | [Cohere on HuggingFace](https://huggingface.co/cstr) |
+| Chinese ASR | `qwen3-asr-1.7b-q4_k.gguf` | 1.3 GB | [Qwen3-ASR GGUF](https://huggingface.co/cstr/qwen3-asr-1.7b-GGUF) |
+| Language detection | `firered-lid-q2_k.gguf` | 350 MB | [FireRed LID GGUF](https://huggingface.co/cstr/firered-lid-GGUF) |
 
 Pass them on every run:
 
 ```powershell
---model models\cohere-transcribe-03-2026-q4_k.gguf
---lid-model models\silero-lid-95-f16.gguf
+--model models\cohere-transcribe.gguf
+--lid-backend firered --lid-model models\firered-lid-q2_k.gguf
 ```
 
 ## CrispASR binary management
@@ -95,22 +97,21 @@ macOS always uses the universal binary.
 | `chinese` | `qwen3-1.7b` | Qwen3-ASR 1.7B | `zh` |
 | `auto` | determined by LID | determined by LID | detected |
 
-`auto` mode extracts short audio windows, runs local Silero language
-detection on each, and routes English to Cohere or Chinese to Qwen3-1.7B.
-Mixed/uncertain content stops with a clear error asking you to re-run with
-`--profile english` or `--profile chinese`.
+`auto` mode runs FireRed language detection on the media, then routes English
+to Cohere or Chinese to Qwen3-1.7B. Mixed or uncertain content stops with a
+clear error asking you to re-run with `--profile english` or `--profile chinese`.
 
 ## Usage
 
 ### Managed server (tool starts CrispASR for you)
 
 ```powershell
-uv run python scripts/transcribe.py sample.wav \
-  --profile auto \
-  --manage-server \
-  --model models\qwen3-asr-1.7b-q4_k.gguf \
-  --lid-model models\silero-lid-95-f16.gguf \
-  --format srt \
+uv run python scripts/transcribe.py sample.wav `
+  --profile auto `
+  --manage-server `
+  --model models\qwen3-asr-1.7b-q4_k.gguf `
+  --lid-backend firered --lid-model models\firered-lid-q2_k.gguf `
+  --format srt `
   --out-dir outputs
 ```
 
@@ -120,14 +121,14 @@ Add `--keep-server` to leave the server running after transcription.
 
 ```powershell
 # Terminal 1 -- start the server
-crispasr --server --backend cohere \
-  -m models\cohere-transcribe-03-2026-q4_k.gguf \
+crispasr --server --backend cohere `
+  -m models\cohere-transcribe.gguf `
   --port 8080
 
 # Terminal 2 -- transcribe
-uv run python scripts/transcribe.py sample.mp4 \
-  --profile english \
-  --server-url http://127.0.0.1:8080 \
+uv run python scripts/transcribe.py sample.mp4 `
+  --profile english `
+  --server-url http://127.0.0.1:8080 `
   --format verbose_json
 ```
 
@@ -164,7 +165,7 @@ is deleted when transcription finishes.
 --model PATH               Local GGUF model path
 --allow-model-auto-download
 --lid-model PATH           Local LID model path
---lid-backend silero|ecapa|firered
+--lid-backend firered|silero|ecapa|whisper
 --host HOST                Managed server host (default 127.0.0.1)
 --port PORT                Managed server port (default 8080)
 --language CODE            Language hint for transcription
@@ -222,7 +223,7 @@ Exposed tools:
 ## Verify
 
 ```powershell
-uv run pytest        # 45 tests
+uv run pytest        # 52 tests
 uv run ruff check .  # zero lint warnings
 ```
 
@@ -242,7 +243,7 @@ and calls them as subprocesses or HTTP services at runtime.
 | [ffmpeg](https://ffmpeg.org/) | LGPL 2.1+ / GPL 2+ | Media decoding and audio extraction |
 | [Cohere Transcribe 03-2026](https://huggingface.co/cstr) | Cohere model license | English ASR model (loaded by CrispASR) |
 | [Qwen3-ASR 1.7B](https://huggingface.co/cstr/qwen3-asr-1.7b-GGUF) | Apache 2.0 | Chinese ASR model (loaded by CrispASR) |
-| [Silero LID](https://github.com/snakers4/silero-vad) | MIT | Language detection model (loaded by CrispASR) |
+| [FireRed LID](https://huggingface.co/cstr/firered-lid-GGUF) | Apache 2.0 | Language detection model (loaded by CrispASR) |
 | [httpx](https://github.com/encode/httpx) | BSD | HTTP client for CrispASR API |
 | [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk) | MIT | MCP server framework |
 

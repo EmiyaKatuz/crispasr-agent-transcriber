@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 from .errors import BackendMismatchError, TranscriberError
 
@@ -23,8 +23,10 @@ class TranscriptionProfile:
         model: str | None = None,
         host: str = "127.0.0.1",
         port: int = 8080,
+        lid_backend: str | None = None,
+        lid_model: str | None = None,
     ) -> list[str]:
-        return [
+        command = [
             crispasr_bin,
             "--server",
             "--backend",
@@ -36,6 +38,9 @@ class TranscriptionProfile:
             "--port",
             str(port),
         ]
+        if lid_backend and lid_model:
+            command.extend(["--lid-backend", lid_backend, "--lid-model", lid_model])
+        return command
 
 
 ENGLISH_PROFILE = TranscriptionProfile(
@@ -61,18 +66,8 @@ PROFILES: dict[str, TranscriptionProfile] = {
 
 ENGLISH_LANG_CODES = {"en", "eng", "en-us", "en-gb", "en-au", "en-nz", "en-ca"}
 CHINESE_LANG_CODES = {
-    "zh",
-    "zho",
-    "chi",
-    "cmn",
-    "yue",
-    "wuu",
-    "hak",
-    "nan",
-    "zh-cn",
-    "zh-tw",
-    "zh-hans",
-    "zh-hant",
+    "zh", "zho", "chi", "cmn", "yue", "wuu", "hak", "nan",
+    "zh-cn", "zh-tw", "zh-hans", "zh-hant",
 }
 
 
@@ -87,15 +82,24 @@ def get_profile(name: str) -> TranscriptionProfile:
         ) from exc
 
 
-def classify_language_code(code: str | None) -> Literal["english", "chinese", "unknown"]:
+def classify_language_code(
+    code: str | None,
+) -> Literal["english", "chinese", "uncertain"]:
     if not code:
-        return "unknown"
+        return "uncertain"
     normalized = code.strip().lower().replace("_", "-")
     if normalized in ENGLISH_LANG_CODES:
         return "english"
     if normalized in CHINESE_LANG_CODES or normalized.startswith("zh-"):
         return "chinese"
-    return "unknown"
+    return "uncertain"
+
+
+def detect_from_response(raw: Any) -> str | None:
+    """Extract detected language from a CrispASR API response."""
+    if isinstance(raw, dict):
+        return raw.get("language")
+    return None
 
 
 def validate_backend_for_profile(
@@ -106,6 +110,8 @@ def validate_backend_for_profile(
     model: str | None = None,
     host: str = "127.0.0.1",
     port: int = 8080,
+    lid_backend: str | None = None,
+    lid_model: str | None = None,
 ) -> None:
     if backend == profile.backend:
         return
@@ -114,6 +120,8 @@ def validate_backend_for_profile(
         model=model,
         host=host,
         port=port,
+        lid_backend=lid_backend,
+        lid_model=lid_model,
     )
     raise BackendMismatchError(
         "The running CrispASR server is using the wrong backend for this file.",

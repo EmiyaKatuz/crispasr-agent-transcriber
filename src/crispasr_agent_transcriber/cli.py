@@ -95,8 +95,10 @@ def build_parser() -> argparse.ArgumentParser:
         default=os.environ.get("CRISPASR_API_KEY"),
         help="CrispASR API key, if CRISPASR_API_KEYS is enabled.",
     )
-    parser.add_argument("--lid-backend", default="silero", help="CrispASR audio-LID backend.")
-    parser.add_argument("--lid-model", default="auto", help="CrispASR audio-LID model.")
+    parser.add_argument("--lid-backend", default="firered",
+        help="CrispASR audio-LID backend (firered, whisper, silero).")
+    parser.add_argument("--lid-model", default=None,
+        help="Local LID model path (required for --profile auto).")
 
     setup_group = parser.add_argument_group("CrispASR setup")
     setup_group.add_argument(

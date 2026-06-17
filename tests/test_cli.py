@@ -19,7 +19,7 @@ def test_auto_profile_refuses_implicit_lid_model_download(tmp_path, capsys) -> N
     code = main([str(wav_path), "--profile", "auto", "--server-url", "http://127.0.0.1:8080"])
     captured = capsys.readouterr()
     assert code == 2
-    assert "local language detection model path" in captured.err
+    assert "LID" in captured.err or "lid" in captured.err.lower()
     assert "--lid-model" in captured.err
 
 

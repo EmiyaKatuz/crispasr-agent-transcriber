@@ -5,9 +5,12 @@ from pathlib import Path
 
 from .client import CrispASRClient
 from .errors import ServerError
-from .language import CrispASRLanguageDetector, detect_primary_language
-from .media import PreprocessMode, create_probe_windows, prepare_media
-from .profiles import get_profile, validate_backend_for_profile
+from .language import run_cli_lid
+from .media import PreprocessMode, prepare_media
+from .profiles import (
+    get_profile,
+    validate_backend_for_profile,
+)
 from .schemas import (
     LanguageDetectionResult,
     ResponseFormat,
@@ -36,7 +39,7 @@ def _resolve_model_for_managed_server(
         return model or "auto"
     raise ServerError(
         "Managed server mode needs a local model path. "
-        "Pass --model C:\\path\\to\\model.gguf, or manually start CrispASR yourself. "
+        "Pass --model path\\to\\model.gguf, or manually start CrispASR yourself. "
         "Use --allow-model-auto-download only if you want CrispASR to download a model.",
         model=model or "auto",
     )
@@ -56,9 +59,32 @@ def _write_outputs(
     output_path = out_dir / f"{original_path.stem}.{extension}"
     metadata_path = out_dir / f"{original_path.stem}.metadata.json"
     output_path.write_text(text, encoding="utf-8")
-    metadata["raw_response"] = raw_response if isinstance(raw_response, (dict, list)) else None
-    metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
+    raw = raw_response if isinstance(raw_response, (dict, list)) else None
+    metadata["raw_response"] = raw
+    metadata_path.write_text(
+        json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     return output_path, metadata_path
+
+
+def _build_server(
+    *,
+    profile,
+    crispasr_bin: str,
+    model: str | None,
+    host: str,
+    port: int,
+    keep_server: bool,
+) -> tuple[ManagedCrispASRServer, str]:
+    server = ManagedCrispASRServer.with_auto_install(
+        profile=profile,
+        model=model,
+        host=host,
+        port=port,
+        keep_server=keep_server,
+    )
+    url = server.start()
+    return server, url
 
 
 def run_transcription(
@@ -85,64 +111,62 @@ def run_transcription(
     hotwords: str | None = None,
     no_timestamps: bool = False,
     api_key: str | None = None,
-    lid_backend: str = "silero",
-    lid_model: str = "auto",
+    lid_backend: str = "firered",
+    lid_model: str | None = None,
 ) -> TranscriptionResult:
     server: ManagedCrispASRServer | None = None
     detection: LanguageDetectionResult | None = None
 
     with prepare_media(input_path, preprocess=preprocess) as prepared:
-        if profile_name == "auto":
-            if lid_model == "auto" and not allow_model_auto_download:
-                raise ServerError(
-                    "Auto profile needs a local language detection model path. "
-                    "Pass --lid-model C:\\path\\to\\silero-lid-95-f16.gguf, "
-                    "or use --allow-model-auto-download if you want CrispASR to download it.",
-                    lid_model=lid_model,
-                )
-            probe_temp_dir, probe_paths = create_probe_windows(
-                prepared.upload_path,
-                duration_seconds=prepared.media_info.duration_seconds,
+        managed_model = (
+            _resolve_model_for_managed_server(
+                model=model,
+                allow_model_auto_download=allow_model_auto_download,
             )
-            try:
-                detector = CrispASRLanguageDetector(
-                    crispasr_bin=crispasr_bin,
+            if manage_server
+            else model
+        )
+
+        # Language detection (standalone CLI, before server start)
+        if profile_name == "auto":
+            if not lid_model:
+                raise ServerError(
+                    "Auto profile needs --lid-model pointing to a local LID model.",
                     lid_backend=lid_backend,
-                    lid_model=lid_model,
                 )
-                detection = detect_primary_language(probe_paths, detector)
-            finally:
-                probe_temp_dir.cleanup()
+            detection = run_cli_lid(
+                prepared.upload_path,
+                crispasr_bin=crispasr_bin,
+                lid_backend=lid_backend,
+                lid_model=lid_model,
+            )
             profile = get_profile(detection.decision)
         else:
             profile = get_profile(profile_name)
 
+        # Start or connect to server
         active_server_url = server_url
         if active_server_url is None:
             if not manage_server:
                 raise ServerError(
                     "No CrispASR server URL was provided. "
-                    "Start CrispASR manually with the selected backend, or pass --manage-server.",
+                    "Start CrispASR manually or pass --manage-server.",
                     backend=profile.backend,
                     command=profile.server_command(
                         crispasr_bin=crispasr_bin,
-                        model=model or "<local-model-path>",
+                        model=managed_model or "<local-model-path>",
                         host=host,
                         port=port,
                     ),
                 )
-            managed_model = _resolve_model_for_managed_server(
-                model=model,
-                allow_model_auto_download=allow_model_auto_download,
-            )
-            server = ManagedCrispASRServer.with_auto_install(
+            server, active_server_url = _build_server(
                 profile=profile,
+                crispasr_bin=crispasr_bin,
                 model=managed_model,
                 host=host,
                 port=port,
                 keep_server=keep_server,
             )
-            active_server_url = server.start()
 
         try:
             with CrispASRClient(
@@ -155,7 +179,7 @@ def run_transcription(
                     health.backend,
                     profile,
                     crispasr_bin=crispasr_bin,
-                    model=model or "<local-model-path>",
+                    model=managed_model or "<local-model-path>",
                     host=host,
                     port=port,
                 )
@@ -169,9 +193,11 @@ def run_transcription(
                     hotwords=hotwords,
                     no_timestamps=no_timestamps,
                 )
-                text, raw_response = client.transcribe(prepared.upload_path, options)
+                text, raw_response = client.transcribe(
+                    prepared.upload_path, options
+                )
         finally:
-            if server:
+            if server and not keep_server:
                 server.stop()
 
         metadata = {

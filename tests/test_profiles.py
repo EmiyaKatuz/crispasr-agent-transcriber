@@ -15,7 +15,7 @@ def test_language_code_classification() -> None:
     assert classify_language_code("en") == "english"
     assert classify_language_code("zh-CN") == "chinese"
     assert classify_language_code("cmn") == "chinese"
-    assert classify_language_code("de") == "unknown"
+    assert classify_language_code("de") == "uncertain"
 
 
 def test_profiles_use_required_backends() -> None:
