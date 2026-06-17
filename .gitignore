@@ -1,0 +1,27 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Local media, models, transcripts, and temporary outputs.
+models/
+outputs/
+transcripts/
+*.wav.tmp
+*.mp3
+*.mp4
+*.m4a
+*.mov
+*.webm
+*.flac
+*.ogg
+*.opus
+*.srt
+*.vtt
+*.transcript.json
+*.metadata.json
+
+# OS/editor noise.
+.DS_Store
+Thumbs.db
