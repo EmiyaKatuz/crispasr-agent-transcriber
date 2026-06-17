@@ -44,7 +44,7 @@ def test_install_crispasr_flag(monkeypatch, capsys) -> None:
 
 def test_crispasr_status_not_installed(monkeypatch, capsys) -> None:
     monkeypatch.setattr(
-        "crispasr_agent_transcriber.crispasr_manager.find_binary",
+        "crispasr_agent_transcriber.cli.find_binary",
         lambda **kw: None,
     )
     code = main(["--crispasr-status"])

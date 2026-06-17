@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import platform
 import shutil
 import subprocess
@@ -16,33 +17,6 @@ BIN_DIR = Path(__file__).resolve().parents[2] / "bin"
 
 CRISPASR_REPO = "CrispStrobe/CrispASR"
 CRISPASR_RELEASES_API = f"https://api.github.com/repos/{CRISPASR_REPO}/releases"
-
-PLATFORM_ASSETS: dict[str, dict[str, list[str]]] = {
-    "windows": {
-        "AMD64": [
-            "crispasr-windows-x86_64-cpu.zip",
-            "crispasr-windows-x86_64-cuda.zip",
-            "crispasr-windows-x86_64-vulkan.zip",
-            "crispasr-windows-x86_64-cpu-legacy.zip",
-        ],
-        "x86_64": [
-            "crispasr-windows-x86_64-cpu.zip",
-            "crispasr-windows-x86_64-cuda.zip",
-            "crispasr-windows-x86_64-vulkan.zip",
-            "crispasr-windows-x86_64-cpu-legacy.zip",
-        ],
-    },
-    "darwin": {
-        "arm64": ["crispasr-macos.tar.gz"],
-        "aarch64": ["crispasr-macos.tar.gz"],
-    },
-    "linux": {
-        "x86_64": ["crispasr-linux-x86_64.tar.gz"],
-        "AMD64": ["crispasr-linux-x86_64.tar.gz"],
-        "aarch64": ["crispasr-linux-arm64.tar.gz"],
-        "arm64": ["crispasr-linux-arm64.tar.gz"],
-    },
-}
 
 EXE_NAME = "crispasr.exe" if sys.platform == "win32" else "crispasr"
 
@@ -63,6 +37,87 @@ def _platform_key() -> str:
     return "linux"
 
 
+def _detect_cuda() -> bool:
+    if shutil.which("nvidia-smi"):
+        try:
+            result = subprocess.run(
+                ["nvidia-smi"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                shell=False,
+            )
+            if result.returncode == 0:
+                return True
+        except Exception:
+            pass
+    if os.environ.get("CUDA_PATH") or os.environ.get("CUDA_HOME"):
+        return True
+    path_lower = os.environ.get("PATH", "").lower()
+    return any(
+        seg in path_lower
+        for seg in ("cuda\\v1", "cuda/v1", "cuda\\bin", "cuda/bin")
+    )
+
+
+def _detect_vulkan() -> bool:
+    if shutil.which("vulkaninfo"):
+        try:
+            result = subprocess.run(
+                ["vulkaninfo", "--summary"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                shell=False,
+            )
+            if result.returncode == 0:
+                return True
+        except Exception:
+            pass
+    return bool(os.environ.get("VULKAN_SDK"))
+
+
+
+def _build_asset_candidates() -> list[str]:
+    current_platform = _platform_key()
+
+    if current_platform == "windows":
+        variants: list[str] = []
+        cuda = _detect_cuda()
+        vulkan = _detect_vulkan()
+        if cuda:
+            variants.append("crispasr-windows-x86_64-cuda.zip")
+        if vulkan and not cuda:
+            variants.append("crispasr-windows-x86_64-vulkan.zip")
+        variants.extend([
+            "crispasr-windows-x86_64-cpu.zip",
+            "crispasr-windows-x86_64-cpu-legacy.zip",
+        ])
+        return variants
+
+    if current_platform == "linux":
+        variants = []
+        cuda = _detect_cuda()
+        vulkan = _detect_vulkan()
+        if cuda:
+            variants.extend([
+                "crispasr-linux-x86_64-cuda.tar.gz",
+                "crispasr-linux-x86_64-cuda13.tar.gz",
+            ])
+        if vulkan and not cuda:
+            variants.append("crispasr-linux-x86_64-vulkan.tar.gz")
+        variants.extend([
+            "crispasr-linux-x86_64-avx512.tar.gz",
+            "crispasr-linux-x86_64.tar.gz",
+        ])
+        return variants
+
+    if current_platform == "darwin":
+        return ["crispasr-macos.tar.gz"]
+
+    return []
+
+
 def _fetch_json(url: str) -> dict:
     try:
         with urllib.request.urlopen(url, timeout=15) as response:
@@ -76,14 +131,11 @@ def _fetch_json(url: str) -> dict:
 
 
 def _resolve_asset(release: dict) -> CrispASRRelease | None:
-    current_platform = _platform_key()
-    machine = platform.machine()
-    candidates = PLATFORM_ASSETS.get(current_platform, {})
-    candidate_names = candidates.get(machine, [])
-    if not candidate_names:
+    candidates = _build_asset_candidates()
+    if not candidates:
         return None
     published = {a.get("name"): a for a in release.get("assets", [])}
-    for name in candidate_names:
+    for name in candidates:
         asset = published.get(name)
         if asset is not None:
             return CrispASRRelease(
@@ -101,7 +153,11 @@ def get_latest_release() -> CrispASRRelease:
         raise TranscriberError(
             "No pre-built CrispASR binary found for this platform.",
             code="crispasr_no_platform_binary",
-            details={"platform": _platform_key(), "machine": platform.machine()},
+            details={
+                "platform": _platform_key(),
+                "machine": platform.machine(),
+                "candidates": _build_asset_candidates(),
+            },
         )
     return release
 
@@ -122,14 +178,19 @@ def _install_from_release(release: CrispASRRelease, dest: Path) -> Path:
     ext = ".zip" if release.asset_name.endswith(".zip") else ".tar.gz"
     tmp = Path(tempfile.gettempdir()) / f"crispasr-download{ext}"
     try:
-        print(f"Downloading CrispASR {release.version} ({release.asset_name}) ...")
+        variant_label = "CPU"
+        if "cuda" in release.asset_name:
+            variant_label = "CUDA"
+        elif "vulkan" in release.asset_name:
+            variant_label = "Vulkan"
+        print(
+            f"Downloading CrispASR {release.version} "
+            f"({release.asset_name}) [{variant_label}] ..."
+        )
         urllib.request.urlretrieve(release.download_url, str(tmp))
 
         print(f"Extracting to {dest} ...")
-        if ext == ".zip":
-            shutil.unpack_archive(str(tmp), str(dest))
-        else:
-            shutil.unpack_archive(str(tmp), str(dest))
+        shutil.unpack_archive(str(tmp), str(dest))
 
         # For tar.gz, the binary is typically inside a subfolder
         exe = dest / EXE_NAME
@@ -151,6 +212,12 @@ def _install_from_release(release: CrispASRRelease, dest: Path) -> Path:
 
 def install(*, bin_dir: Path | None = None) -> Path:
     release = get_latest_release()
+    variant_label = "CPU"
+    if "cuda" in release.asset_name:
+        variant_label = "CUDA"
+    elif "vulkan" in release.asset_name:
+        variant_label = "Vulkan"
+    print(f"Selected variant: {variant_label}")
     return _install_from_release(release, bin_dir or BIN_DIR)
 
 

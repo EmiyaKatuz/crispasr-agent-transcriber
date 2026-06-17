@@ -7,6 +7,9 @@ from pathlib import Path
 from crispasr_agent_transcriber.crispasr_manager import (
     EXE_NAME,
     CrispASRRelease,
+    _build_asset_candidates,
+    _detect_cuda,
+    _detect_vulkan,
     _platform_key,
     _resolve_asset,
     check_for_update,
@@ -33,40 +36,140 @@ class TestPlatformKey:
         assert _platform_key() == "linux"
 
 
-class TestResolveAsset:
-    def test_resolves_windows_x86_64(self, monkeypatch):
+class TestDetectCuda:
+    def test_detects_nvidia_smi(self, monkeypatch):
+        def fake_run(*args, **kwargs):
+            return subprocess.CompletedProcess(args, 0, stdout="Driver Version: 550")
+
+        monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/nvidia-smi")
+        monkeypatch.setattr(subprocess, "run", fake_run)
+        assert _detect_cuda() is True
+
+    def test_detects_cuda_path_env(self, monkeypatch):
+        monkeypatch.setattr("shutil.which", lambda name: None)
+        monkeypatch.setenv("CUDA_PATH", "C:\\cuda\\v12.4")
+        assert _detect_cuda() is True
+
+    def test_no_cuda(self, monkeypatch):
+        monkeypatch.setattr("shutil.which", lambda name: None)
+        monkeypatch.delenv("CUDA_PATH", raising=False)
+        monkeypatch.delenv("CUDA_HOME", raising=False)
+        monkeypatch.setenv("PATH", "/usr/bin:/bin")
+        assert _detect_cuda() is False
+
+
+class TestDetectVulkan:
+    def test_detects_vulkaninfo(self, monkeypatch):
+        def fake_run(*args, **kwargs):
+            return subprocess.CompletedProcess(args, 0, stdout="Vulkan 1.3")
+
+        monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/vulkaninfo")
+        monkeypatch.setattr(subprocess, "run", fake_run)
+        assert _detect_vulkan() is True
+
+    def test_detects_vulkan_sdk_env(self, monkeypatch):
+        monkeypatch.setattr("shutil.which", lambda name: None)
+        monkeypatch.setenv("VULKAN_SDK", "C:\\VulkanSDK\\1.3")
+        assert _detect_vulkan() is True
+
+    def test_no_vulkan(self, monkeypatch):
+        monkeypatch.setattr("shutil.which", lambda name: None)
+        monkeypatch.delenv("VULKAN_SDK", raising=False)
+        assert _detect_vulkan() is False
+
+
+class TestBuildAssetCandidates:
+    def test_cuda_first_on_windows_with_gpu(self, monkeypatch):
         monkeypatch.setattr(sys, "platform", "win32")
         monkeypatch.setattr("platform.system", lambda: "Windows")
-        monkeypatch.setattr("platform.machine", lambda: "AMD64")
+        monkeypatch.setattr(
+            "crispasr_agent_transcriber.crispasr_manager._detect_cuda",
+            lambda: True,
+        )
+        monkeypatch.setattr(
+            "crispasr_agent_transcriber.crispasr_manager._detect_vulkan",
+            lambda: False,
+        )
+        candidates = _build_asset_candidates()
+        assert candidates[0] == "crispasr-windows-x86_64-cuda.zip"
+        assert "crispasr-windows-x86_64-cpu.zip" in candidates
+        assert "crispasr-windows-x86_64-cpu-legacy.zip" in candidates
+
+    def test_cpu_only_on_windows_without_gpu(self, monkeypatch):
+        monkeypatch.setattr(sys, "platform", "win32")
+        monkeypatch.setattr("platform.system", lambda: "Windows")
+        monkeypatch.setattr(
+            "crispasr_agent_transcriber.crispasr_manager._detect_cuda",
+            lambda: False,
+        )
+        monkeypatch.setattr(
+            "crispasr_agent_transcriber.crispasr_manager._detect_vulkan",
+            lambda: False,
+        )
+        candidates = _build_asset_candidates()
+        assert candidates[0] == "crispasr-windows-x86_64-cpu.zip"
+
+    def test_macos_returns_universal(self, monkeypatch):
+        monkeypatch.setattr(sys, "platform", "darwin")
+        monkeypatch.setattr("platform.system", lambda: "Darwin")
+        candidates = _build_asset_candidates()
+        assert candidates == ["crispasr-macos.tar.gz"]
+
+
+class TestResolveAsset:
+    def test_matches_first_candidate(self, monkeypatch):
+        monkeypatch.setattr(
+            "crispasr_agent_transcriber.crispasr_manager._build_asset_candidates",
+            lambda: [
+                "crispasr-windows-x86_64-cuda.zip",
+                "crispasr-windows-x86_64-cpu.zip",
+            ],
+        )
         release = {
             "tag_name": "v0.8.0",
             "assets": [
                 {
                     "name": "crispasr-windows-x86_64-cpu.zip",
-                    "browser_download_url": "https://example.com/crispasr-windows.zip",
+                    "browser_download_url": "https://example.com/cpu.zip",
+                },
+                {
+                    "name": "crispasr-windows-x86_64-cuda.zip",
+                    "browser_download_url": "https://example.com/cuda.zip",
                 },
             ],
         }
         result = _resolve_asset(release)
         assert result is not None
+        assert result.asset_name == "crispasr-windows-x86_64-cuda.zip"
         assert result.version == "v0.8.0"
-        assert result.asset_name == "crispasr-windows-x86_64-cpu.zip"
 
-    def test_returns_none_for_unknown_platform(self, monkeypatch):
-        monkeypatch.setattr(sys, "platform", "freebsd")
-        monkeypatch.setattr("platform.system", lambda: "FreeBSD")
-        monkeypatch.setattr("platform.machine", lambda: "x86_64")
-        release = {"tag_name": "v0.8.0", "assets": []}
-        assert _resolve_asset(release) is None
-
-    def test_returns_none_when_asset_not_in_release(self, monkeypatch):
-        monkeypatch.setattr(sys, "platform", "win32")
-        monkeypatch.setattr("platform.system", lambda: "Windows")
-        monkeypatch.setattr("platform.machine", lambda: "AMD64")
+    def test_falls_back_when_first_missing(self, monkeypatch):
+        monkeypatch.setattr(
+            "crispasr_agent_transcriber.crispasr_manager._build_asset_candidates",
+            lambda: [
+                "crispasr-windows-x86_64-cuda.zip",
+                "crispasr-windows-x86_64-cpu.zip",
+            ],
+        )
         release = {
             "tag_name": "v0.8.0",
-            "assets": [{"name": "wrong-file.tar.gz"}],
+            "assets": [
+                {
+                    "name": "crispasr-windows-x86_64-cpu.zip",
+                    "browser_download_url": "https://example.com/cpu.zip",
+                },
+            ],
         }
+        result = _resolve_asset(release)
+        assert result is not None
+        assert result.asset_name == "crispasr-windows-x86_64-cpu.zip"
+
+    def test_returns_none_when_no_candidates_match(self, monkeypatch):
+        monkeypatch.setattr(
+            "crispasr_agent_transcriber.crispasr_manager._build_asset_candidates",
+            lambda: ["crispasr-windows-x86_64-cuda.zip"],
+        )
+        release = {"tag_name": "v0.8.0", "assets": []}
         assert _resolve_asset(release) is None
 
 
