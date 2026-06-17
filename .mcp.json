@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "crispasr-agent-transcriber": {
+      "command": "uv",
+      "args": ["run", "python", "-m", "crispasr_mcp.server"],
+      "env": {}
+    }
+  }
+}

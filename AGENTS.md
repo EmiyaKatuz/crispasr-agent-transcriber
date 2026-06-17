@@ -1,4 +1,4 @@
-# Project Instructions
+﻿# Project Instructions
 
 This repository builds local-only transcription helpers for Codex and MCP agents.
 
@@ -10,3 +10,16 @@ This repository builds local-only transcription helpers for Codex and MCP agents
 - Do not commit model files, audio/video files, transcripts, generated outputs, or temp WAVs.
 - Do not trigger model downloads during verification. If a local model is missing, stop and tell the user what to download.
 - Before reporting back, run the available tests and explain the outcome in plain language.
+
+## Plugin structure
+
+This repository is also a Codex plugin. The plugin manifest is at
+`.codex-plugin/plugin.json`, and the MCP server config is at `.mcp.json`.
+
+- Skills live in `skills/crispasr-transcription/`.
+- The MCP server lives in `mcp_server/crispasr_mcp/`.
+- Plugin assets (icons, README) live in `assets/`.
+- Installation instructions are in `docs/plugin_install.md`.
+
+When modifying the plugin manifest or MCP config, keep paths relative to the
+repository root so the plugin works when cloned to any location.
