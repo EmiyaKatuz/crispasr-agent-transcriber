@@ -25,7 +25,7 @@ def test_profiles_use_required_backends() -> None:
 
 def test_backend_mismatch_includes_one_server_command() -> None:
     with pytest.raises(BackendMismatchError) as exc_info:
-        validate_backend_for_profile("cohere", CHINESE_PROFILE, model="C:\\models\\qwen.gguf")
+        validate_backend_for_profile("cohere", CHINESE_PROFILE, model="models/qwen.gguf")
     details = exc_info.value.details
     assert details["expected_backend"] == "qwen3-1.7b"
     assert details["actual_backend"] == "cohere"

@@ -27,7 +27,7 @@ def test_managed_server_builds_one_backend_command(monkeypatch) -> None:
 
     server = ManagedCrispASRServer(
         profile=CHINESE_PROFILE,
-        model="C:\\models\\qwen3-asr-1.7b-q4_k.gguf",
+        model="models/qwen3-asr-1.7b-q4_k.gguf",
     )
     assert server.start() == "http://127.0.0.1:8080"
     assert len(calls) == 1

@@ -19,7 +19,7 @@ Rules:
 Example:
 
 ```powershell
-uv run python skills\crispasr-transcription\scripts\transcribe.py .\file.mp4 --profile auto --lid-model C:\models\crispasr\silero-lid-95-f16.gguf --server-url http://127.0.0.1:8080
+uv run python skills\crispasr-transcription\scripts\transcribe.py .\file.mp4 --profile auto --lid-model models\silero-lid-95-f16.gguf --server-url http://127.0.0.1:8080
 ```
 
 Reference: `references/crispasr_server.md`.

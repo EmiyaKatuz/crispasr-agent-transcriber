@@ -11,10 +11,10 @@ This project expects a local `crispasr` executable. It does not bundle CrispASR 
 - English: `cohere-transcribe-q4_k.gguf` with backend `cohere`
 - Chinese: `qwen3-asr-1.7b-q4_k.gguf` with backend `qwen3-1.7b`
 
-Keep models outside this repository, for example:
+Place model files in the `models/` directory at the repository root.
 
 ```powershell
-C:\models\crispasr\
+models\
 ```
 
 ## Start one server
@@ -22,13 +22,13 @@ C:\models\crispasr\
 English:
 
 ```powershell
-crispasr --server --backend cohere -m C:\models\crispasr\cohere-transcribe-q4_k.gguf --port 8080
+crispasr --server --backend cohere -m models\cohere-transcribe-q4_k.gguf --port 8080
 ```
 
 Chinese:
 
 ```powershell
-crispasr --server --backend qwen3-1.7b -m C:\models\crispasr\qwen3-asr-1.7b-q4_k.gguf --port 8080
+crispasr --server --backend qwen3-1.7b -m models\qwen3-asr-1.7b-q4_k.gguf --port 8080
 ```
 
 Only one is expected at a time.

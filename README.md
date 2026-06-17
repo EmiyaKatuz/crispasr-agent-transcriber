@@ -35,7 +35,7 @@ uv run python scripts/transcribe.py --install-crispasr
 # Transcribe a file
 uv run python scripts/transcribe.py sample.mp4 --profile auto \
   --manage-server \
-  --lid-model C:\models\crispasr\silero-lid-95-f16.gguf \
+  --lid-model models\silero-lid-95-f16.gguf \
   --format verbose_json
 ```
 
@@ -55,8 +55,8 @@ GGUF files and keep them outside the repository:
 Pass them on every run:
 
 ```powershell
---model C:\models\crispasr\cohere-transcribe-03-2026-q4_k.gguf
---lid-model C:\models\crispasr\silero-lid-95-f16.gguf
+--model models\cohere-transcribe-03-2026-q4_k.gguf
+--lid-model models\silero-lid-95-f16.gguf
 ```
 
 ## CrispASR binary management
@@ -108,8 +108,8 @@ Mixed/uncertain content stops with a clear error asking you to re-run with
 uv run python scripts/transcribe.py sample.wav \
   --profile auto \
   --manage-server \
-  --model C:\models\crispasr\qwen3-asr-1.7b-q4_k.gguf \
-  --lid-model C:\models\crispasr\silero-lid-95-f16.gguf \
+  --model models\qwen3-asr-1.7b-q4_k.gguf \
+  --lid-model models\silero-lid-95-f16.gguf \
   --format srt \
   --out-dir outputs
 ```
@@ -121,7 +121,7 @@ Add `--keep-server` to leave the server running after transcription.
 ```powershell
 # Terminal 1 -- start the server
 crispasr --server --backend cohere \
-  -m C:\models\cohere-transcribe-03-2026-q4_k.gguf \
+  -m models\cohere-transcribe-03-2026-q4_k.gguf \
   --port 8080
 
 # Terminal 2 -- transcribe
