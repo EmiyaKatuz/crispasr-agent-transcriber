@@ -4,19 +4,49 @@ Local transcription helpers for Codex and other AI agents using CrispASR.
 
 The v0.1 path is intentionally small:
 
-- English audio is routed to CrispASR `cohere`.
-- Chinese audio is routed to CrispASR `qwen3-1.7b`.
+- English audio is routed to CrispASR `cohere` (Cohere Transcribe 03-2026).
+- Chinese audio is routed to CrispASR `qwen3-1.7b` (Qwen3-ASR 1.7B).
 - `--profile auto` locally probes the media language first, then uses one selected backend.
 - Audio and video files stay on the local machine.
 - Video and unsupported audio are converted with ffmpeg to a temporary mono 16 kHz WAV before upload.
 
-## Install
+## Quick start
 
 ```powershell
+# Clone and install dependencies
+git clone https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git
+cd crispasr-agent-transcriber
 uv sync --extra dev
+
+# Install CrispASR binary (one time)
+uv run python scripts/transcribe.py --install-crispasr
+
+# Check installed version and update availability
+uv run python scripts/transcribe.py --crispasr-status
+
+# Update to the latest release
+uv run python scripts/transcribe.py --update-crispasr
 ```
 
-Install CrispASR separately and put `crispasr` on PATH, or pass `--crispasr-bin`.
+Or use the convenience script:
+
+```powershell
+.\scripts\setup.ps1
+```
+
+## CrispASR binary management
+
+The tool automatically detects, installs, and updates the CrispASR binary.
+
+| Command | What it does |
+|---|---|
+| `--install-crispasr` | Downloads the latest CrispASR release for your platform and extracts it to `bin/`. |
+| `--update-crispasr` | Checks for a newer release and upgrades if one is available. |
+| `--crispasr-status` | Shows the installed version and whether an update is available. |
+| `--crispasr-bin-dir` | Custom directory for the CrispASR binary (default: `./bin`). |
+| `--crispasr-bin` | Explicit path to `crispasr.exe` (overrides auto-detection). |
+
+When `--manage-server` is set and no binary is found, the tool auto-installs CrispASR before starting the server.
 
 ## Model rule
 

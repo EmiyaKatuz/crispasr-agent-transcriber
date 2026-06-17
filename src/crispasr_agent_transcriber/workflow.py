@@ -135,9 +135,8 @@ def run_transcription(
                 model=model,
                 allow_model_auto_download=allow_model_auto_download,
             )
-            server = ManagedCrispASRServer(
+            server = ManagedCrispASRServer.with_auto_install(
                 profile=profile,
-                crispasr_bin=crispasr_bin,
                 model=managed_model,
                 host=host,
                 port=port,

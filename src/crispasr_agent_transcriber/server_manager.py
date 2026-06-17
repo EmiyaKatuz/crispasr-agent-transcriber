@@ -3,9 +3,12 @@ from __future__ import annotations
 import subprocess
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import httpx
 
+from .crispasr_manager import BIN_DIR as DEFAULT_BIN_DIR
+from .crispasr_manager import ensure_binary, find_binary
 from .errors import ServerError
 from .profiles import TranscriptionProfile
 
@@ -25,6 +28,34 @@ class ManagedCrispASRServer:
     @property
     def base_url(self) -> str:
         return f"http://{self.host}:{self.port}"
+
+    @classmethod
+    def with_auto_install(
+        cls,
+        profile: TranscriptionProfile,
+        *,
+        model: str | None = None,
+        host: str = "127.0.0.1",
+        port: int = 8080,
+        keep_server: bool = False,
+        bin_dir: str | None = None,
+        **kwargs,
+    ) -> ManagedCrispASRServer:
+        bin_path = find_binary(bin_dir=Path(bin_dir) if bin_dir else DEFAULT_BIN_DIR)
+        if bin_path is None:
+            bin_path = ensure_binary(
+                bin_dir=Path(bin_dir) if bin_dir else DEFAULT_BIN_DIR,
+                auto_install=True,
+            )
+        return cls(
+            profile=profile,
+            crispasr_bin=str(bin_path) if bin_path else "crispasr",
+            model=model,
+            host=host,
+            port=port,
+            keep_server=keep_server,
+            **kwargs,
+        )
 
     def build_command(self) -> list[str]:
         return [

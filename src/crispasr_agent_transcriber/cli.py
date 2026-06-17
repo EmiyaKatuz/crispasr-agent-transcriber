@@ -6,6 +6,13 @@ import os
 import sys
 from pathlib import Path
 
+from .crispasr_manager import (
+    BIN_DIR as DEFAULT_BIN_DIR,
+)
+from .crispasr_manager import (
+    check_for_update,
+    find_binary,
+)
 from .errors import TranscriberError
 from .workflow import run_transcription
 
@@ -14,7 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Transcribe local audio or video through a local CrispASR server."
     )
-    parser.add_argument("input", help="Local audio or video file to transcribe.")
+    parser.add_argument("input", nargs="?", help="Local audio or video file to transcribe.")
     parser.add_argument(
         "--profile",
         choices=["auto", "english", "chinese"],
@@ -46,9 +53,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="Leave a managed CrispASR server running after transcription.",
     )
     parser.add_argument(
+        "--crispasr-bin-dir",
+        default=os.environ.get("CRISPASR_BIN_DIR", str(DEFAULT_BIN_DIR)),
+        help="Directory containing the crispasr executable.",
+    )
+    parser.add_argument(
         "--crispasr-bin",
-        default=os.environ.get("CRISPASR_BIN", "crispasr"),
-        help="Path to the crispasr executable.",
+        default=None,
+        help="Explicit path to crispasr executable (overrides bin dir).",
     )
     parser.add_argument(
         "--model",
@@ -85,23 +97,99 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--lid-backend", default="silero", help="CrispASR audio-LID backend.")
     parser.add_argument("--lid-model", default="auto", help="CrispASR audio-LID model.")
+
+    setup_group = parser.add_argument_group("CrispASR setup")
+    setup_group.add_argument(
+        "--install-crispasr",
+        action="store_true",
+        help="Download and install the latest CrispASR binary.",
+    )
+    setup_group.add_argument(
+        "--update-crispasr",
+        action="store_true",
+        help="Check for and install a newer CrispASR release.",
+    )
+    setup_group.add_argument(
+        "--crispasr-status",
+        action="store_true",
+        help="Show installed CrispASR version and check for updates.",
+    )
     return parser
+
+
+def _resolve_crispasr_bin(args: argparse.Namespace) -> str:
+    if args.crispasr_bin:
+        return args.crispasr_bin
+    bin_dir = Path(args.crispasr_bin_dir)
+    binary = find_binary(bin_dir=bin_dir)
+    if binary:
+        return str(binary)
+    return "crispasr"
+
+
+def _handle_setup_command(args: argparse.Namespace) -> int:
+    bin_dir = Path(args.crispasr_bin_dir)
+
+    if args.crispasr_status:
+        current = find_binary(bin_dir=bin_dir)
+        if current:
+            ver = "installed"
+            try:
+                from .crispasr_manager import installed_version
+                ver = installed_version(bin_dir=bin_dir) or ver
+            except Exception:
+                pass
+            print(f"CrispASR: {current} ({ver})")
+            update_info = check_for_update(bin_dir=bin_dir)
+            if update_info:
+                print(f"Update available: {update_info.version}")
+                print("Run with --update-crispasr to upgrade.")
+            else:
+                print("Up to date.")
+        else:
+            print("CrispASR not installed.")
+            print("Run with --install-crispasr to download it.")
+        return 0
+
+    if args.update_crispasr:
+        from .crispasr_manager import update as do_update
+        path = do_update(bin_dir=bin_dir)
+        print(f"CrispASR updated: {path}")
+        return 0
+
+    if args.install_crispasr:
+        from .crispasr_manager import install as do_install
+        path = do_install(bin_dir=bin_dir)
+        print(f"CrispASR installed: {path}")
+        return 0
+
+    return -1
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+
+    setup_rc = _handle_setup_command(args)
+    if setup_rc != -1:
+        return setup_rc
+
+    if not args.input:
+        parser.print_help()
+        return 1
+
     try:
+        crispasr_bin = _resolve_crispasr_bin(args)
         result = run_transcription(
             Path(args.input),
             profile_name=args.profile,
-            response_format=args.response_format,  # type: ignore[arg-type]
+            response_format=args.response_format,
             out_dir=args.out_dir,
             server_url=args.server_url,
             allow_remote_server=args.allow_remote_server,
             manage_server=args.manage_server,
             keep_server=args.keep_server,
-            crispasr_bin=args.crispasr_bin,
+            crispasr_bin=crispasr_bin,
             model=args.model,
             allow_model_auto_download=args.allow_model_auto_download,
             host=args.host,
@@ -123,8 +211,8 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     print(f"Transcript: {result.output_path}")
-    print(f"Metadata: {result.metadata_path}")
-    print(f"Profile: {result.profile} ({result.backend})")
+    print(f"Metadata:  {result.metadata_path}")
+    print(f"Profile:   {result.profile} ({result.backend})")
     return 0
 
 
