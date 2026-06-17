@@ -42,7 +42,7 @@ class TestResolveAsset:
             "tag_name": "v0.8.0",
             "assets": [
                 {
-                    "name": "crispasr-windows-x86_64.zip",
+                    "name": "crispasr-windows-x86_64-cpu.zip",
                     "browser_download_url": "https://example.com/crispasr-windows.zip",
                 },
             ],
@@ -50,7 +50,7 @@ class TestResolveAsset:
         result = _resolve_asset(release)
         assert result is not None
         assert result.version == "v0.8.0"
-        assert result.asset_name == "crispasr-windows-x86_64.zip"
+        assert result.asset_name == "crispasr-windows-x86_64-cpu.zip"
 
     def test_returns_none_for_unknown_platform(self, monkeypatch):
         monkeypatch.setattr(sys, "platform", "freebsd")

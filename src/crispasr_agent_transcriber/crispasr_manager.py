@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import platform
@@ -17,20 +17,30 @@ BIN_DIR = Path(__file__).resolve().parents[2] / "bin"
 CRISPASR_REPO = "CrispStrobe/CrispASR"
 CRISPASR_RELEASES_API = f"https://api.github.com/repos/{CRISPASR_REPO}/releases"
 
-PLATFORM_ASSETS: dict[str, dict[str, str]] = {
+PLATFORM_ASSETS: dict[str, dict[str, list[str]]] = {
     "windows": {
-        "x86_64": "crispasr-windows-x86_64.zip",
-        "AMD64": "crispasr-windows-x86_64.zip",
+        "AMD64": [
+            "crispasr-windows-x86_64-cpu.zip",
+            "crispasr-windows-x86_64-cuda.zip",
+            "crispasr-windows-x86_64-vulkan.zip",
+            "crispasr-windows-x86_64-cpu-legacy.zip",
+        ],
+        "x86_64": [
+            "crispasr-windows-x86_64-cpu.zip",
+            "crispasr-windows-x86_64-cuda.zip",
+            "crispasr-windows-x86_64-vulkan.zip",
+            "crispasr-windows-x86_64-cpu-legacy.zip",
+        ],
     },
     "darwin": {
-        "arm64": "crispasr-macos.tar.gz",
-        "aarch64": "crispasr-macos.tar.gz",
+        "arm64": ["crispasr-macos.tar.gz"],
+        "aarch64": ["crispasr-macos.tar.gz"],
     },
     "linux": {
-        "x86_64": "crispasr-linux-x86_64.tar.gz",
-        "AMD64": "crispasr-linux-x86_64.tar.gz",
-        "aarch64": "crispasr-linux-arm64.tar.gz",
-        "arm64": "crispasr-linux-arm64.tar.gz",
+        "x86_64": ["crispasr-linux-x86_64.tar.gz"],
+        "AMD64": ["crispasr-linux-x86_64.tar.gz"],
+        "aarch64": ["crispasr-linux-arm64.tar.gz"],
+        "arm64": ["crispasr-linux-arm64.tar.gz"],
     },
 }
 
@@ -69,15 +79,17 @@ def _resolve_asset(release: dict) -> CrispASRRelease | None:
     current_platform = _platform_key()
     machine = platform.machine()
     candidates = PLATFORM_ASSETS.get(current_platform, {})
-    asset_name = candidates.get(machine)
-    if asset_name is None:
+    candidate_names = candidates.get(machine, [])
+    if not candidate_names:
         return None
-    for asset in release.get("assets", []):
-        if asset.get("name") == asset_name:
+    published = {a.get("name"): a for a in release.get("assets", [])}
+    for name in candidate_names:
+        asset = published.get(name)
+        if asset is not None:
             return CrispASRRelease(
                 version=release["tag_name"],
                 download_url=asset["browser_download_url"],
-                asset_name=asset_name,
+                asset_name=name,
             )
     return None
 

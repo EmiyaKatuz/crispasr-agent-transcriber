@@ -58,12 +58,16 @@ def test_crispasr_status_installed(monkeypatch, capsys, tmp_path) -> None:
     exe.write_bytes(b"fake")
 
     monkeypatch.setattr(
-        "crispasr_agent_transcriber.crispasr_manager.find_binary",
+        "crispasr_agent_transcriber.cli.find_binary",
         lambda **kw: exe,
     )
     monkeypatch.setattr(
-        "crispasr_agent_transcriber.crispasr_manager.check_for_update",
+        "crispasr_agent_transcriber.cli.check_for_update",
         lambda **kw: None,
+    )
+    monkeypatch.setattr(
+        "crispasr_agent_transcriber.crispasr_manager.installed_version",
+        lambda **kw: "v0.8.0",
     )
     code = main(["--crispasr-status", "--crispasr-bin-dir", str(tmp_path)])
     captured = capsys.readouterr()
