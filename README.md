@@ -9,7 +9,7 @@ no API keys required for transcription.
 Give it a local audio or video file. It:
 
 1. Probes the spoken language (English or Chinese).
-2. Starts a local CrispASR server with the right backend ！ Cohere Transcribe
+2. Starts a local CrispASR server with the right backend -- Cohere Transcribe
    for English, Qwen3-ASR for Chinese.
 3. Extracts audio from video with ffmpeg when needed.
 4. Calls CrispASR's `/v1/audio/transcriptions` endpoint.
@@ -79,11 +79,11 @@ starting the server.
 
 On install and update, the tool checks your hardware:
 
-1. **CUDA** ！ `nvidia-smi` available, or `CUDA_PATH` / `CUDA_HOME` set, or
-   CUDA in `PATH` ★ downloads `crispasr-*-cuda` variant.
-2. **Vulkan** ！ `vulkaninfo` or `VULKAN_SDK` set (only when CUDA is absent) ★
+1. **CUDA** -- `nvidia-smi` available, or `CUDA_PATH` / `CUDA_HOME` set, or
+   CUDA in `PATH` -> downloads `crispasr-*-cuda` variant.
+2. **Vulkan** -- `vulkaninfo` or `VULKAN_SDK` set (only when CUDA is absent) ->
    downloads `crispasr-*-vulkan` variant.
-3. **CPU** ！ fallback when no GPU toolkit is detected.
+3. **CPU** -- fallback when no GPU toolkit is detected.
 
 macOS always uses the universal binary.
 
@@ -119,12 +119,12 @@ Add `--keep-server` to leave the server running after transcription.
 ### Manual server (you start CrispASR)
 
 ```powershell
-# Terminal 1 ！ start the server
+# Terminal 1 -- start the server
 crispasr --server --backend cohere \
   -m C:\models\cohere-transcribe-03-2026-q4_k.gguf \
   --port 8080
 
-# Terminal 2 ！ transcribe
+# Terminal 2 -- transcribe
 uv run python scripts/transcribe.py sample.mp4 \
   --profile english \
   --server-url http://127.0.0.1:8080 \
@@ -233,7 +233,7 @@ This project is licensed under the [MIT License](LICENSE).
 ### Third-party components and attribution
 
 This tool orchestrates several independently-licensed projects. It does not
-bundle, fork, or redistribute their code ！ it downloads pre-built binaries
+bundle, fork, or redistribute their code -- it downloads pre-built binaries
 and calls them as subprocesses or HTTP services at runtime.
 
 | Component | License | Role |
@@ -251,7 +251,7 @@ HuggingFace repositories. See [Required models](#required-models) above.
 
 ## Related projects
 
-- [CrispASR](https://github.com/CrispStrobe/CrispASR) ！ the ASR engine this
+- [CrispASR](https://github.com/CrispStrobe/CrispASR) -- the ASR engine this
   tool wraps
-- [CrisperWeaver](https://github.com/CrispStrobe/CrisperWeaver) ！ CrispASR's
+- [CrisperWeaver](https://github.com/CrispStrobe/CrisperWeaver) -- CrispASR's
   desktop GUI (not used by this tool)
