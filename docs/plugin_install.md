@@ -2,11 +2,14 @@
 
 ## For end users
 
-### 1. Clone the repository
+### 1. Install the plugin source
+
+Clone the plugin into the standard personal plugin directory:
 
 ```powershell
-git clone https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git
-cd crispasr-agent-transcriber
+$pluginRoot = Join-Path $HOME "plugins\crispasr-agent-transcriber"
+git clone https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git $pluginRoot
+Set-Location $pluginRoot
 ```
 
 ### 2. Install Python dependencies
@@ -36,14 +39,45 @@ Place these in the `models/` directory:
 | Chinese ASR | `qwen3-asr-1.7b-q4_k.gguf` | [Qwen3-ASR GGUF](https://huggingface.co/cstr/qwen3-asr-1.7b-GGUF) |
 | Language detection | `firered-lid-q2_k.gguf` | [FireRed LID GGUF](https://huggingface.co/cstr/firered-lid-GGUF) |
 
-### 5. Register as a Codex plugin
+### 5. Register the personal marketplace entry
 
-Add to your Codex configuration:
+Create `%USERPROFILE%\.agents\plugins\marketplace.json` if it does not
+already exist. The personal marketplace is discovered automatically by Codex:
 
-```toml
-[[plugins]]
-source = "C:\\path\\to\\crispasr-agent-transcriber"
+```json
+{
+  "name": "personal",
+  "interface": {
+    "displayName": "Personal"
+  },
+  "plugins": [
+    {
+      "name": "crispasr-agent-transcriber",
+      "source": {
+        "source": "local",
+        "path": "./plugins/crispasr-agent-transcriber"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
 ```
+
+If that marketplace file already contains other plugins, append only the new
+entry to its existing `plugins` array instead of replacing the file.
+
+Install the plugin in a Codex build that provides plugin commands:
+
+```powershell
+codex plugin add crispasr-agent-transcriber@personal
+```
+
+In Codex desktop builds without the `codex plugin` CLI command, open the
+Plugins view and install **CrispASR Transcriber** from the Personal marketplace.
 
 The plugin provides:
 - **Skill**: `crispasr-transcription` (see `skills/crispasr-transcription/SKILL.md`)
@@ -79,7 +113,7 @@ crispasr-agent-transcriber/
 ### Running the MCP server standalone
 
 ```powershell
-uv run python -m crispasr_mcp.server
+uv run --extra mcp python -m crispasr_mcp.server
 ```
 
 ### Running the CLI

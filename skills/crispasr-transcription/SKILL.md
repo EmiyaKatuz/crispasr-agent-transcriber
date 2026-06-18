@@ -1,6 +1,6 @@
-﻿---
+---
 name: crispasr-transcription
-description: Transcribe local audio or video with CrispASR using local models only.
+description: Transcribe local audio or video files with CrispASR using local models only. Use when Codex needs to detect English or Chinese speech, transcribe media, create text or subtitle output, or operate the bundled local CrispASR MCP tools.
 ---
 
 # CrispASR Transcription

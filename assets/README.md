@@ -23,24 +23,29 @@ A Codex plugin for transcribing local audio or video files through
 
 ### Install the plugin in Codex
 
-Add this repository as a local plugin source:
-
-```toml
-# In your Codex config:
-[[plugins]]
-source = "C:\\path\\to\\crispasr-agent-transcriber"
-```
-
-Or clone and point Codex to it:
+Clone the repository into the personal plugin directory:
 
 ```powershell
-git clone https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git
+$pluginRoot = Join-Path $HOME "plugins\crispasr-agent-transcriber"
+git clone https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git $pluginRoot
+Set-Location $pluginRoot
 ```
+
+Register it in the Personal marketplace as described in
+[Plugin installation](../docs/plugin_install.md), then install it with a Codex
+build that supports plugin commands:
+
+```powershell
+codex plugin add crispasr-agent-transcriber@personal
+```
+
+If the CLI does not expose `codex plugin`, install **CrispASR Transcriber**
+from the Personal marketplace in the Codex desktop Plugins view.
 
 ### Install CrispASR binary
 
 ```powershell
-uv sync --extra dev --extra mcp
+uv sync --extra mcp
 uv run python scripts/transcribe.py --install-crispasr
 ```
 

@@ -42,6 +42,53 @@ uv run python scripts/transcribe.py sample.mp4 --profile auto `
 
 Or run `.\scripts\setup.ps1` for a guided first-time setup.
 
+## Install as a Codex plugin
+
+The plugin bundles the Codex Skill and the MCP server. Models remain local and
+are not included in the plugin download.
+
+Clone the repository into the standard personal plugin directory:
+
+```powershell
+$pluginRoot = Join-Path $HOME "plugins\crispasr-agent-transcriber"
+git clone https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git $pluginRoot
+Set-Location $pluginRoot
+uv sync --extra mcp
+```
+
+Add this entry to `%USERPROFILE%\.agents\plugins\marketplace.json`. If the
+file already contains plugins, append the entry to its existing `plugins`
+array instead of replacing the file:
+
+```json
+{
+  "name": "crispasr-agent-transcriber",
+  "source": {
+    "source": "local",
+    "path": "./plugins/crispasr-agent-transcriber"
+  },
+  "policy": {
+    "installation": "AVAILABLE",
+    "authentication": "ON_INSTALL"
+  },
+  "category": "Productivity"
+}
+```
+
+Install it with a Codex build that supports plugin commands:
+
+```powershell
+codex plugin add crispasr-agent-transcriber@personal
+```
+
+If your Codex CLI does not expose `codex plugin`, open the Codex desktop
+Plugins view and install **CrispASR Transcriber** from the Personal marketplace.
+The first MCP launch automatically installs the Python MCP dependency through
+`uv`; CrispASR models must still be downloaded manually into `models/`.
+
+See [Plugin installation](docs/plugin_install.md) for the complete setup and
+verification steps.
+
 ## Required models
 
 This tool does **not** download models automatically. Download these three
@@ -188,7 +235,7 @@ is deleted when transcription finishes.
 
 ```powershell
 uv sync --extra mcp
-uv run python -m crispasr_mcp.server
+uv run --extra mcp python -m crispasr_mcp.server
 ```
 
 Exposed tools:
@@ -223,7 +270,7 @@ Exposed tools:
 ## Verify
 
 ```powershell
-uv run pytest        # 52 tests
+uv run pytest        # 63 tests
 uv run ruff check .  # zero lint warnings
 ```
 

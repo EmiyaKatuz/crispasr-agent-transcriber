@@ -9,7 +9,7 @@ uv sync --extra mcp
 Run:
 
 ```powershell
-uv run python -m crispasr_mcp.server
+uv run --extra mcp python -m crispasr_mcp.server
 ```
 
 Example Codex MCP config:
@@ -17,8 +17,8 @@ Example Codex MCP config:
 ```toml
 [mcp_servers.crispasr-agent-transcriber]
 command = "uv"
-args = ["run", "python", "-m", "crispasr_mcp.server"]
-cwd = "C:\\Users\\Katuz\\Documents\\CrispASR transcription"
+args = ["run", "--extra", "mcp", "python", "-m", "crispasr_mcp.server"]
+cwd = "C:\\path\\to\\crispasr-agent-transcriber"
 ```
 
 Model downloads are not started by default. Pass local model paths to managed-server calls.
