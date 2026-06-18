@@ -4,7 +4,9 @@
 
 ### 1. Install the plugin source
 
-Clone the plugin into the standard personal plugin directory:
+Download the plugin ZIP from the matching GitHub Release and extract it into
+`$HOME\plugins`, or clone the plugin into the standard personal plugin
+directory:
 
 ```powershell
 $pluginRoot = Join-Path $HOME "plugins\crispasr-agent-transcriber"

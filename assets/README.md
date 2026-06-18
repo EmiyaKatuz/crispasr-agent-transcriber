@@ -14,6 +14,9 @@ A Codex plugin for transcribing local audio or video files through
 
 ## Install
 
+Tagged GitHub Releases include a ready-to-register Codex plugin ZIP. The same
+release also exposes a portable MCP command for other AI agents.
+
 ### Prerequisites
 
 - Python 3.11+

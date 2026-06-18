@@ -1,6 +1,6 @@
 {
   "name": "crispasr-agent-transcriber",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Transcribe local audio or video files through CrispASR with local models only. Auto-detects English vs Chinese, routes to Cohere Transcribe or Qwen3-ASR, and extracts audio from video with ffmpeg. No cloud uploads.",
   "author": {
     "name": "crispasr-agent-transcriber contributors",
@@ -26,7 +26,7 @@
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "CrispASR Transcriber",
-    "shortDescription": "Transcribe local audio/video with CrispASR — auto language routing, GPU acceleration",
+    "shortDescription": "Transcribe local audio/video with CrispASR, auto routing, and GPU acceleration",
     "longDescription": "Use CrispASR Transcriber to transcribe local audio or video files entirely on your machine. Auto-detects English vs Chinese using FireRed LID, routes to Cohere Transcribe or Qwen3-ASR 1.7B, extracts audio from video with ffmpeg, and outputs text, verbose JSON, SRT, or VTT. No cloud uploads, no API keys. Supports GPU acceleration (CUDA > Vulkan > CPU).",
     "developerName": "crispasr-agent-transcriber contributors",
     "category": "Productivity",

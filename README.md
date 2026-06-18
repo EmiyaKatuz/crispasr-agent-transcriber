@@ -47,6 +47,11 @@ Or run `.\scripts\setup.ps1` for a guided first-time setup.
 The plugin bundles the Codex Skill and the MCP server. Models remain local and
 are not included in the plugin download.
 
+Every tagged GitHub Release includes a
+`crispasr-agent-transcriber-plugin-<version>.zip` bundle. Extract that archive
+under `$HOME\plugins\crispasr-agent-transcriber`, or clone the repository there
+directly as shown below.
+
 Clone the repository into the standard personal plugin directory:
 
 ```powershell
@@ -88,6 +93,19 @@ The first MCP launch automatically installs the Python MCP dependency through
 
 See [Plugin installation](docs/plugin_install.md) for the complete setup and
 verification steps.
+
+## Use with other AI agents
+
+The MCP server is the cross-agent interface. Any agent that supports MCP stdio
+can run the released package directly from GitHub:
+
+```powershell
+uvx --from "crispasr-agent-transcriber[mcp] @ git+https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git@v0.3.1" crispasr-agent-mcp
+```
+
+Use the same command and arguments in Claude Desktop, Cursor, or another MCP
+client. See [AI agent integrations](docs/agent_integrations.md) for a generic
+MCP configuration and Codex CLI command.
 
 ## Required models
 
@@ -235,7 +253,7 @@ is deleted when transcription finishes.
 
 ```powershell
 uv sync --extra mcp
-uv run --extra mcp python -m crispasr_mcp.server
+uv run --extra mcp crispasr-agent-mcp
 ```
 
 Exposed tools:
