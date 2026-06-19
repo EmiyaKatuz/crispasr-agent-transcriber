@@ -246,7 +246,12 @@ models.
    <!-- mcp-name: io.github.emiyakatuz/crispasr-agent-transcriber -->
    ```
 
-2. Install the official publisher on Windows:
+2. Preferred method: open **Actions > Publish MCP Registry > Run workflow**.
+   The workflow downloads the pinned official publisher, validates
+   `server.json`, authenticates with GitHub's short-lived OIDC identity, and
+   publishes without storing another repository secret.
+
+3. For a manual Windows fallback, install the official publisher:
 
    ```powershell
    $arch = if (
@@ -261,7 +266,7 @@ models.
    .\mcp-publisher.exe --help
    ```
 
-3. Create `server.json` at the repository root. Its version must already exist
+4. Create `server.json` at the repository root. Its version must already exist
    on PyPI:
 
    ```json
@@ -294,8 +299,8 @@ models.
    registry clients can run the package directly. The older
    `crispasr-agent-mcp` command remains available.
 
-4. Validate, authenticate with the GitHub account that owns `EmiyaKatuz`, and
-   publish:
+5. For manual publishing, validate, authenticate with the GitHub account that
+   owns `EmiyaKatuz`, and publish:
 
    ```powershell
    .\mcp-publisher.exe validate
@@ -303,7 +308,7 @@ models.
    .\mcp-publisher.exe publish
    ```
 
-5. Verify the registry record:
+6. Verify the registry record:
 
    ```powershell
    Invoke-RestMethod `

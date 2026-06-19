@@ -2,6 +2,16 @@ name: Publish npm installer
 
 on:
   workflow_dispatch:
+    inputs:
+      deprecate_version:
+        description: "Optional exact old version to deprecate after verification"
+        required: false
+        type: string
+      deprecation_message:
+        description: "Deprecation message"
+        required: false
+        default: "This release is obsolete; use the latest version."
+        type: string
 
 permissions:
   contents: read
@@ -70,3 +80,20 @@ jobs:
           done
           test -n "$READY"
           echo "$INSTALLED_VERSION" | grep -Fx "$VERSION"
+      - name: Deprecate old npm version
+        if: ${{ inputs.deprecate_version != '' }}
+        working-directory: npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          DEPRECATE_VERSION: ${{ inputs.deprecate_version }}
+          DEPRECATION_MESSAGE: ${{ inputs.deprecation_message }}
+        run: |
+          node -e '
+            const version = process.env.DEPRECATE_VERSION;
+            if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) {
+              console.error("deprecate_version must be one exact semantic version");
+              process.exit(1);
+            }
+          '
+          NAME=$(node -p "require('./package.json').name")
+          npm deprecate "${NAME}@${DEPRECATE_VERSION}" "$DEPRECATION_MESSAGE"
