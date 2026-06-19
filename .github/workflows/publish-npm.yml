@@ -60,11 +60,14 @@ jobs:
                 process.exit(value["crispasr-agent-transcriber"] === "bin/crispasr-agent-transcriber.js" ? 0 : 1);
               } catch { process.exit(1); }
             ' "$BIN"; then
-              READY=1
-              break
+              INSTALLED_VERSION=$(npx --yes "${NAME}@${VERSION}" --version 2>/dev/null || true)
+              if [ "$INSTALLED_VERSION" = "$VERSION" ]; then
+                READY=1
+                break
+              fi
             fi
             echo "Waiting for npm registry propagation (${ATTEMPT}/12)..."
             sleep 10
           done
           test -n "$READY"
-          npx --yes "${NAME}@${VERSION}" --version | grep -Fx "$VERSION"
+          echo "$INSTALLED_VERSION" | grep -Fx "$VERSION"
