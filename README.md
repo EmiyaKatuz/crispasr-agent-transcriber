@@ -1,5 +1,7 @@
 ﻿# crispasr-agent-transcriber
 
+<!-- mcp-name: io.github.emiyakatuz/crispasr-agent-transcriber -->
+
 Local-only transcription for Codex and MCP-based AI agents, powered by
 [CrispASR](https://github.com/CrispStrobe/CrispASR). No cloud uploads,
 no API keys required for transcription.
@@ -17,42 +19,27 @@ Give it a local audio or video file. It:
 
 Everything runs on your machine. Media never leaves it.
 
-## Quick start
+## Install for Codex
 
-**Prerequisites:** Python 3.11+, [uv](https://docs.astral.sh/uv/),
-[ffmpeg](https://ffmpeg.org/), and three model files (see below).
+The plugin includes the Codex Skill, command-line tool, and MCP server. Media
+stays on your computer. Model files are not included and are never downloaded
+without your action.
+
+### 1. Install the prerequisites
+
+Install Python 3.11 or newer, [uv](https://docs.astral.sh/uv/), and
+[ffmpeg](https://ffmpeg.org/). Confirm that all three commands work:
 
 ```powershell
-git clone https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git
-cd crispasr-agent-transcriber
-
-# Install Python dependencies
-uv sync --extra dev
-
-# Install the CrispASR binary (auto-detects GPU: CUDA > Vulkan > CPU)
-uv run python scripts/transcribe.py --install-crispasr
-
-# Transcribe a file
-uv run python scripts/transcribe.py sample.mp4 --profile auto `
-  --manage-server `
-  --lid-backend firered --lid-model models\firered-lid-q2_k.gguf `
-  --model models\cohere-transcribe.gguf `
-  --format verbose_json
+python --version
+uv --version
+ffmpeg -version
 ```
 
-Or run `.\scripts\setup.ps1` for a guided first-time setup.
+### 2. Install the plugin files
 
-## Install as a Codex plugin
-
-The plugin bundles the Codex Skill and the MCP server. Models remain local and
-are not included in the plugin download.
-
-Every tagged GitHub Release includes a
-`crispasr-agent-transcriber-plugin-<version>.zip` bundle. Extract that archive
-under `$HOME\plugins\crispasr-agent-transcriber`, or clone the repository there
-directly as shown below.
-
-Clone the repository into the standard personal plugin directory:
+The reliable installation path is to clone the plugin into Codex's personal
+plugin directory:
 
 ```powershell
 $pluginRoot = Join-Path $HOME "plugins\crispasr-agent-transcriber"
@@ -61,38 +48,66 @@ Set-Location $pluginRoot
 uv sync --extra mcp
 ```
 
-Add this entry to `%USERPROFILE%\.agents\plugins\marketplace.json`. If the
-file already contains plugins, append the entry to its existing `plugins`
-array instead of replacing the file:
+To update an existing installation later:
 
-```json
-{
-  "name": "crispasr-agent-transcriber",
-  "source": {
-    "source": "local",
-    "path": "./plugins/crispasr-agent-transcriber"
-  },
-  "policy": {
-    "installation": "AVAILABLE",
-    "authentication": "ON_INSTALL"
-  },
-  "category": "Productivity"
-}
+```powershell
+Set-Location (Join-Path $HOME "plugins\crispasr-agent-transcriber")
+git pull --ff-only
+uv sync --extra mcp
 ```
 
-Install it with a Codex build that supports plugin commands:
+### 3. Install CrispASR and add the models
+
+Run the guided setup. It detects the machine and selects CUDA first, then
+Vulkan, then CPU:
+
+```powershell
+.\scripts\setup.ps1
+```
+
+The setup script installs the CrispASR program but does not download models.
+Download the three files listed under [Required models](#required-models) and
+place them in:
+
+```text
+~/plugins/crispasr-agent-transcriber/models/
+```
+
+### 4. Enable the plugin in Codex
+
+Follow the [complete plugin registration instructions](docs/plugin_install.md)
+to add the local plugin to the Personal marketplace. Then run:
 
 ```powershell
 codex plugin add crispasr-agent-transcriber@personal
 ```
 
-If your Codex CLI does not expose `codex plugin`, open the Codex desktop
-Plugins view and install **CrispASR Transcriber** from the Personal marketplace.
-The first MCP launch automatically installs the Python MCP dependency through
-`uv`; CrispASR models must still be downloaded manually into `models/`.
+If the installed Codex CLI has no `codex plugin` command, open the Codex
+desktop Plugins view and install **CrispASR Transcriber** from the Personal
+marketplace. Start a new Codex conversation after installation.
 
-See [Plugin installation](docs/plugin_install.md) for the complete setup and
-verification steps.
+Ask Codex:
+
+```text
+Transcribe C:\path\to\sample.mp4 with CrispASR using auto language detection.
+Save a verbose JSON transcript and an SRT subtitle file.
+```
+
+See [Plugin installation](docs/plugin_install.md) for troubleshooting and
+verification.
+
+## Direct command-line use
+
+After installation, you can run the transcription script without Codex:
+
+```powershell
+Set-Location (Join-Path $HOME "plugins\crispasr-agent-transcriber")
+uv run python scripts/transcribe.py sample.mp4 --profile auto `
+  --manage-server `
+  --lid-backend firered --lid-model models\firered-lid-q2_k.gguf `
+  --model models\cohere-transcribe.gguf `
+  --format verbose_json
+```
 
 ## Use with other AI agents
 
@@ -106,6 +121,12 @@ uvx --from "crispasr-agent-transcriber[mcp] @ git+https://github.com/EmiyaKatuz/
 Use the same command and arguments in Claude Desktop, Cursor, or another MCP
 client. See [AI agent integrations](docs/agent_integrations.md) for a generic
 MCP configuration and Codex CLI command.
+
+## Maintainer publishing
+
+End users do not need the release steps. Maintainers should follow the
+[publishing guide](docs/publishing.md) for Codex Marketplace, PyPI, MCP
+Registry, and cross-agent distribution.
 
 ## Required models
 
@@ -288,7 +309,7 @@ Exposed tools:
 ## Verify
 
 ```powershell
-uv run pytest        # 63 tests
+uv run pytest
 uv run ruff check .  # zero lint warnings
 ```
 
