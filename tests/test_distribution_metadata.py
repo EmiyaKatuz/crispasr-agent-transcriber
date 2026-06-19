@@ -23,7 +23,7 @@ def test_distribution_versions_and_registry_metadata_match() -> None:
     assert npm_package["name"] == "@emiyakatuz/crispasr-agent-transcriber"
     assert (
         npm_package["bin"]["crispasr-agent-transcriber"]
-        == "./bin/crispasr-agent-transcriber.js"
+        == "bin/crispasr-agent-transcriber.js"
     )
     assert (
         project["project"]["scripts"]["crispasr-agent-transcriber"]

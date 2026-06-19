@@ -113,7 +113,7 @@ The MCP server is the cross-agent interface. Any agent that supports MCP stdio
 can run the released package directly from GitHub:
 
 ```powershell
-uvx --from "crispasr-agent-transcriber[mcp] @ git+https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git@v0.3.2" crispasr-agent-mcp
+uvx --from "crispasr-agent-transcriber[mcp] @ git+https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git@v0.3.3" crispasr-agent-mcp
 ```
 
 Use the same command and arguments in Claude Desktop, Cursor, or another MCP
