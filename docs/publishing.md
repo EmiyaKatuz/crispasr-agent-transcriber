@@ -1,20 +1,73 @@
 # Publishing and distribution
 
-There are four separate publishing steps. They serve different users and must
+There are five separate publishing steps. They serve different users and must
 be completed in this order:
 
-1. **Codex Marketplace** distributes the complete Codex plugin, including its
+1. **GitHub Release and npm** provide the verified plugin ZIP and the `npx`
+   installer.
+2. **Codex Marketplace** distributes the complete Codex plugin, including its
    Skill, MCP configuration, and interface metadata.
-2. **PyPI** distributes the Python CLI and MCP server independently of Codex.
-3. **MCP Registry** makes the published PyPI package discoverable by compatible
+3. **PyPI** distributes the Python CLI and MCP server independently of Codex.
+4. **MCP Registry** makes the published PyPI package discoverable by compatible
    MCP clients. The registry stores metadata only, so PyPI must come first.
-4. **Agent configurations** connect Codex, Claude Desktop, Cursor, VS Code, or
+5. **Agent configurations** connect Codex, Claude Desktop, Cursor, VS Code, or
    another MCP client to the same local MCP server.
 
 The examples below use `0.3.2` as the next release version. Replace it with the
 version you are actually publishing. Keep the version identical in
 `pyproject.toml`, `.codex-plugin/plugin.json`, the Git tag, PyPI, and
 `server.json`.
+
+### Step 0: publish the GitHub Release and npm installer
+
+The npm package is a small installer. It does not include models or CrispASR
+binaries. It downloads the matching plugin ZIP from GitHub Releases and refuses
+to install it unless the SHA-256 checksum matches.
+
+1. Create or sign in to the npm account that owns the `@emiyakatuz` scope.
+   Enable two-factor authentication.
+
+2. Create a granular npm access token that can publish
+   `@emiyakatuz/crispasr-agent-transcriber`. In the GitHub repository:
+
+   - create an environment named `npm` under **Settings > Environments**;
+   - add the token as the Actions secret `NPM_TOKEN`;
+   - never place the token in the repository or a command-line argument.
+
+3. Keep the same version in `npm/package.json`, `pyproject.toml`,
+   `.codex-plugin/plugin.json`, and `server.json`. Run all local checks:
+
+   ```powershell
+   uv run pytest
+   uv run ruff check .
+   Push-Location npm
+   npm ci
+   npm test
+   npm pack --dry-run
+   Pop-Location
+   ```
+
+4. Push the version tag. The Release workflow creates the plugin ZIP and
+   `SHA256SUMS`:
+
+   ```powershell
+   git tag v0.3.2
+   git push origin v0.3.2
+   ```
+
+5. After the GitHub Release succeeds, open **Actions > Publish npm installer >
+   Run workflow**. The workflow verifies the matching ZIP and checksum assets
+   before publishing the npm package.
+
+6. Verify the public installer without changing files:
+
+   ```powershell
+   npm view @emiyakatuz/crispasr-agent-transcriber version
+   npx @emiyakatuz/crispasr-agent-transcriber@latest install --dry-run
+   ```
+
+For every later version, publish the GitHub Release first and run the npm
+workflow second. npm package versions are immutable and cannot be overwritten.
 
 ### Step 1: publish a Codex Marketplace repository
 
@@ -93,7 +146,7 @@ generated transcripts.
 For an update, publish a new release of this repository, replace only
 `plugins/crispasr-agent-transcriber` in the marketplace repository with the new
 release bundle, commit, and push. Users can then reinstall the plugin from the
-same marketplace. See the [plugin installation guide](docs/plugin_install.md).
+same marketplace. See the [plugin installation guide](plugin_install.md).
 
 ### Step 2: publish the Python package to PyPI
 

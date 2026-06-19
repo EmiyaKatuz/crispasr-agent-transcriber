@@ -1,0 +1,37 @@
+{
+  "name": "@emiyakatuz/crispasr-agent-transcriber",
+  "version": "0.3.2",
+  "description": "Installer and updater for the local-only CrispASR Codex plugin and MCP server.",
+  "type": "module",
+  "bin": {
+    "crispasr-agent-transcriber": "./bin/crispasr-agent-transcriber.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "pack:check": "npm pack --dry-run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git"
+  },
+  "homepage": "https://github.com/EmiyaKatuz/crispasr-agent-transcriber#readme",
+  "bugs": {
+    "url": "https://github.com/EmiyaKatuz/crispasr-agent-transcriber/issues"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16"
+  }
+}

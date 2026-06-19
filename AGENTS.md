@@ -23,3 +23,15 @@ This repository is also a Codex plugin. The plugin manifest is at
 
 When modifying the plugin manifest or MCP config, keep paths relative to the
 repository root so the plugin works when cloned to any location.
+
+## npm installer
+
+The `npm/` directory contains the public `npx` installer.
+
+- Keep its version synchronized with `pyproject.toml`, `plugin.json`, and
+  `server.json`.
+- Never add model downloads to the installer.
+- Verify GitHub Release SHA-256 checksums before extracting plugin files.
+- Preserve `models/`, `bin/`, and `outputs/` during updates and normal removal.
+- Run `npm test` and `npm pack --dry-run` from the `npm/` directory after
+  changes.

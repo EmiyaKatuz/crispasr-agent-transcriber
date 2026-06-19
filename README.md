@@ -19,82 +19,80 @@ Give it a local audio or video file. It:
 
 Everything runs on your machine. Media never leaves it.
 
-## Install for Codex
+## Quick install for Codex
 
 The plugin includes the Codex Skill, command-line tool, and MCP server. Media
-stays on your computer. Model files are not included and are never downloaded
-without your action.
+stays on your computer. Model files are never downloaded automatically.
 
-### 1. Install the prerequisites
+### 1. Install prerequisites
 
-Install Python 3.11 or newer, [uv](https://docs.astral.sh/uv/), and
-[ffmpeg](https://ffmpeg.org/). Confirm that all three commands work:
+Install Node.js 20 or newer, [uv](https://docs.astral.sh/uv/), and
+[ffmpeg](https://ffmpeg.org/). The installer uses `uv` to provide Python.
 
 ```powershell
-python --version
+node --version
 uv --version
 ffmpeg -version
 ```
 
-### 2. Install the plugin files
-
-The reliable installation path is to clone the plugin into Codex's personal
-plugin directory:
+### 2. Run the installer
 
 ```powershell
-$pluginRoot = Join-Path $HOME "plugins\crispasr-agent-transcriber"
-git clone https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git $pluginRoot
-Set-Location $pluginRoot
-uv sync --extra mcp
+npx @emiyakatuz/crispasr-agent-transcriber@latest install
 ```
 
-To update an existing installation later:
+The installer:
 
-```powershell
-Set-Location (Join-Path $HOME "plugins\crispasr-agent-transcriber")
-git pull --ff-only
-uv sync --extra mcp
-```
+- downloads the matching GitHub Release and verifies its SHA-256 checksum;
+- installs the plugin under `~/plugins/crispasr-agent-transcriber`;
+- installs the Python and MCP dependencies;
+- detects CUDA, Vulkan, or CPU and installs the best CrispASR build;
+- registers the plugin in the Codex Personal marketplace;
+- preserves existing models, binaries, and outputs during updates.
 
-### 3. Install CrispASR and add the models
+### 3. Add the local models
 
-Run the guided setup. It detects the machine and selects CUDA first, then
-Vulkan, then CPU:
-
-```powershell
-.\scripts\setup.ps1
-```
-
-The setup script installs the CrispASR program but does not download models.
-Download the three files listed under [Required models](#required-models) and
-place them in:
+When a model is missing, the installer prints its official source and stops.
+Download the three files listed under [Required models](#required-models) into:
 
 ```text
 ~/plugins/crispasr-agent-transcriber/models/
 ```
 
-### 4. Enable the plugin in Codex
+Then verify the complete installation:
 
-Follow the [complete plugin registration instructions](docs/plugin_install.md)
-to add the local plugin to the Personal marketplace. Then run:
+```powershell
+npx @emiyakatuz/crispasr-agent-transcriber@latest doctor
+```
+
+### 4. Enable the plugin
+
+With a Codex build that supports plugin commands, run:
 
 ```powershell
 codex plugin add crispasr-agent-transcriber@personal
 ```
 
-If the installed Codex CLI has no `codex plugin` command, open the Codex
-desktop Plugins view and install **CrispASR Transcriber** from the Personal
-marketplace. Start a new Codex conversation after installation.
-
-Ask Codex:
+If the CLI has no `codex plugin` command, open the Codex desktop Plugins view
+and install **CrispASR Transcriber** from the Personal marketplace. Start a new
+conversation, then ask:
 
 ```text
 Transcribe C:\path\to\sample.mp4 with CrispASR using auto language detection.
 Save a verbose JSON transcript and an SRT subtitle file.
 ```
 
-See [Plugin installation](docs/plugin_install.md) for troubleshooting and
-verification.
+### Update or uninstall
+
+```powershell
+npx @emiyakatuz/crispasr-agent-transcriber@latest update
+npx @emiyakatuz/crispasr-agent-transcriber@latest uninstall
+```
+
+Uninstall preserves local models, CrispASR binaries, and outputs. Use
+`uninstall --purge-data` only when those files should also be deleted. See
+[Plugin installation](docs/plugin_install.md) for manual installation and
+troubleshooting.
 
 ## Direct command-line use
 
@@ -115,7 +113,7 @@ The MCP server is the cross-agent interface. Any agent that supports MCP stdio
 can run the released package directly from GitHub:
 
 ```powershell
-uvx --from "crispasr-agent-transcriber[mcp] @ git+https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git@v0.3.1" crispasr-agent-mcp
+uvx --from "crispasr-agent-transcriber[mcp] @ git+https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git@v0.3.2" crispasr-agent-mcp
 ```
 
 Use the same command and arguments in Claude Desktop, Cursor, or another MCP
@@ -305,6 +303,11 @@ Exposed tools:
   windows are deleted when transcription finishes.
 - **Binary downloads are explicit.** CrispASR binary installs only from the
   official `CrispStrobe/CrispASR` GitHub releases.
+- **Verified plugin releases.** The npm installer requires the plugin ZIP to
+  match the SHA-256 value published in the same GitHub Release.
+- **Narrow installer writes.** The installer manages only its plugin directory
+  and the named Personal marketplace entry. Updates preserve local models,
+  binaries, and outputs.
 
 ## Verify
 
@@ -332,6 +335,8 @@ and calls them as subprocesses or HTTP services at runtime.
 | [FireRed LID](https://huggingface.co/cstr/firered-lid-GGUF) | Apache 2.0 | Language detection model (loaded by CrispASR) |
 | [httpx](https://github.com/encode/httpx) | BSD | HTTP client for CrispASR API |
 | [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk) | MIT | MCP server framework |
+| [Node.js](https://nodejs.org/) | MIT | npm installer runtime |
+| [adm-zip](https://github.com/cthackers/adm-zip) | MIT | Verified plugin ZIP extraction |
 
 Model files must be downloaded separately by the user from their respective
 HuggingFace repositories. See [Required models](#required-models) above.

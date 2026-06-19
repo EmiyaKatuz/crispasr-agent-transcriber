@@ -16,3 +16,14 @@ jobs:
       - run: uv sync --extra dev --extra mcp
       - run: uv run pytest
       - run: uv run ruff check .
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: npm/package-lock.json
+      - run: npm ci
+        working-directory: npm
+      - run: npm test
+        working-directory: npm
+      - run: npm pack --dry-run
+        working-directory: npm

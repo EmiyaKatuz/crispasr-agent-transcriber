@@ -2,6 +2,37 @@
 
 ## For end users
 
+### Recommended: install with npx
+
+Prerequisites are Node.js 20 or newer, `uv`, and ffmpeg. Run:
+
+```powershell
+npx @emiyakatuz/crispasr-agent-transcriber@latest install
+```
+
+The installer downloads and verifies the matching plugin release, installs
+Python/MCP dependencies, selects the best CrispASR build for the machine, and
+adds the Personal marketplace entry without replacing existing plugins.
+
+Models are deliberately not downloaded. Place the three files listed below in
+`$HOME\plugins\crispasr-agent-transcriber\models`, then run:
+
+```powershell
+npx @emiyakatuz/crispasr-agent-transcriber@latest doctor
+```
+
+For updates and removal:
+
+```powershell
+npx @emiyakatuz/crispasr-agent-transcriber@latest update
+npx @emiyakatuz/crispasr-agent-transcriber@latest uninstall
+```
+
+The default uninstall preserves `models/`, `bin/`, and `outputs/`. Add
+`--purge-data` only to remove those local files too.
+
+## Manual installation
+
 ### 1. Install the plugin source
 
 Download the plugin ZIP from the matching GitHub Release and extract it into

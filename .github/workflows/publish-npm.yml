@@ -1,0 +1,48 @@
+name: Publish npm installer
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          cache: npm
+          cache-dependency-path: npm/package-lock.json
+      - run: npm ci
+        working-directory: npm
+      - run: npm test
+        working-directory: npm
+      - run: npm pack --dry-run
+        working-directory: npm
+      - name: Verify the matching GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(node -p "require('./npm/package.json').version")
+          gh release view "v${VERSION}" --json assets \
+            --jq '.assets[].name' | grep -Fx "crispasr-agent-transcriber-plugin-${VERSION}.zip"
+          gh release view "v${VERSION}" --json assets \
+            --jq '.assets[].name' | grep -Fx "SHA256SUMS"
+      - name: Publish public npm package
+        working-directory: npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "${NAME}@${VERSION}" version >/dev/null 2>&1; then
+            echo "${NAME}@${VERSION} is already published."
+          else
+            npm publish --access public --provenance
+          fi

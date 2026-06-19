@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .ruff_cache/
+node_modules/
+*.tgz
+.codegraph/
 
 # Local media, models, transcripts, and temporary outputs.
 models/
@@ -27,7 +30,7 @@ transcripts/
 Thumbs.db
 
 # CrispASR binary
-bin/
+/bin/
 
 # CPU build backup
-bin-cpu-backup/
+/bin-cpu-backup/

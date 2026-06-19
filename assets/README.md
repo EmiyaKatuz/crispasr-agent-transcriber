@@ -19,24 +19,22 @@ release also exposes a portable MCP command for other AI agents.
 
 ### Prerequisites
 
-- Python 3.11+
+- Node.js 20+
 - [uv](https://docs.astral.sh/uv/)
 - [ffmpeg](https://ffmpeg.org/) (in PATH)
 - Three model files (see below)
 
 ### Install the plugin in Codex
 
-Clone the repository into the personal plugin directory:
+Run the published installer:
 
 ```powershell
-$pluginRoot = Join-Path $HOME "plugins\crispasr-agent-transcriber"
-git clone https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git $pluginRoot
-Set-Location $pluginRoot
+npx @emiyakatuz/crispasr-agent-transcriber@latest install
 ```
 
-Register it in the Personal marketplace as described in
-[Plugin installation](../docs/plugin_install.md), then install it with a Codex
-build that supports plugin commands:
+The installer verifies the GitHub Release, installs dependencies, installs the
+GPU-preferred CrispASR build, and registers the Personal marketplace entry.
+Then install it with a Codex build that supports plugin commands:
 
 ```powershell
 codex plugin add crispasr-agent-transcriber@personal
@@ -44,15 +42,6 @@ codex plugin add crispasr-agent-transcriber@personal
 
 If the CLI does not expose `codex plugin`, install **CrispASR Transcriber**
 from the Personal marketplace in the Codex desktop Plugins view.
-
-### Install CrispASR binary
-
-```powershell
-uv sync --extra mcp
-uv run python scripts/transcribe.py --install-crispasr
-```
-
-This auto-detects your GPU (CUDA/Vulkan/CPU) and downloads the right binary.
 
 ### Download models
 
