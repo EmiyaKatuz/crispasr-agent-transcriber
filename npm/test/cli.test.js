@@ -20,7 +20,7 @@ test("help and version are available through the bin entry point", () => {
     shell: false,
   });
   assert.equal(version.status, 0);
-  assert.equal(version.stdout.trim(), "0.3.3");
+  assert.equal(version.stdout.trim(), "0.3.4");
 });
 
 test("doctor emits one JSON object", () => {

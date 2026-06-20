@@ -11,7 +11,7 @@ import AdmZip from "adm-zip";
 import { doctor, installPlugin, uninstallPlugin } from "../src/installer.js";
 import { InstallerError } from "../src/errors.js";
 
-const VERSION = "0.3.3";
+const VERSION = "0.3.4";
 const ARCHIVE_NAME = `crispasr-agent-transcriber-plugin-${VERSION}.zip`;
 
 function createBundle(filePath, readmeText) {

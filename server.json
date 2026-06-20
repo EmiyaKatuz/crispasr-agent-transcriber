@@ -1,19 +1,19 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.emiyakatuz/crispasr-agent-transcriber",
+  "name": "io.github.EmiyaKatuz/crispasr-agent-transcriber",
   "title": "CrispASR Agent Transcriber",
   "description": "Transcribe local audio and video with CrispASR and local models only.",
   "repository": {
     "url": "https://github.com/EmiyaKatuz/crispasr-agent-transcriber",
     "source": "github"
   },
-  "version": "0.3.3",
+  "version": "0.3.4",
   "packages": [
     {
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "crispasr-agent-transcriber",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"

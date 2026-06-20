@@ -34,6 +34,6 @@ def test_distribution_versions_and_registry_metadata_match() -> None:
 def test_readme_contains_mcp_registry_ownership_marker() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8-sig")
     assert (
-        "<!-- mcp-name: io.github.emiyakatuz/crispasr-agent-transcriber -->"
+        "<!-- mcp-name: io.github.EmiyaKatuz/crispasr-agent-transcriber -->"
         in readme
     )

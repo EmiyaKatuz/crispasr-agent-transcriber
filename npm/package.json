@@ -1,6 +1,6 @@
 {
   "name": "@emiyakatuz/crispasr-agent-transcriber",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Installer and updater for the local-only CrispASR Codex plugin and MCP server.",
   "type": "module",
   "bin": {
