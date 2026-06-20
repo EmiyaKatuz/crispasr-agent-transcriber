@@ -6,6 +6,11 @@ Local-only transcription for Codex and MCP-based AI agents, powered by
 [CrispASR](https://github.com/CrispStrobe/CrispASR). No cloud uploads,
 no API keys required for transcription.
 
+[GitHub Release](https://github.com/EmiyaKatuz/crispasr-agent-transcriber/releases/latest)
+| [npm installer](https://www.npmjs.com/package/@emiyakatuz/crispasr-agent-transcriber)
+| [PyPI package](https://pypi.org/project/crispasr-agent-transcriber/)
+| [MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.EmiyaKatuz%2Fcrispasr-agent-transcriber)
+
 ## What it does
 
 Give it a local audio or video file. It:
@@ -102,8 +107,9 @@ After installation, you can run the transcription script without Codex:
 Set-Location (Join-Path $HOME "plugins\crispasr-agent-transcriber")
 uv run python scripts/transcribe.py sample.mp4 --profile auto `
   --manage-server `
+  --english-model models\cohere-transcribe.gguf `
+  --chinese-model models\qwen3-asr-1.7b-q4_k.gguf `
   --lid-backend firered --lid-model models\firered-lid-q2_k.gguf `
-  --model models\cohere-transcribe.gguf `
   --format verbose_json
 ```
 
@@ -113,7 +119,7 @@ The MCP server is the cross-agent interface. Any agent that supports MCP stdio
 can run the released package directly from GitHub:
 
 ```powershell
-uvx --from "crispasr-agent-transcriber[mcp] @ git+https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git@v0.3.4" crispasr-agent-mcp
+uvx --from "crispasr-agent-transcriber[mcp] @ git+https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git@v0.3.5" crispasr-agent-mcp
 ```
 
 Use the same command and arguments in Claude Desktop, Cursor, or another MCP
@@ -132,18 +138,28 @@ This tool does **not** download models automatically. Download these three
 GGUF files and keep them in a local directory (the repo's `models/` folder
 works well):
 
-| Purpose | File | ~Size | Source |
-|---|---|---|---|
-| English ASR | `cohere-transcribe.gguf` | 3.9 GB | [Cohere on HuggingFace](https://huggingface.co/cstr) |
-| Chinese ASR | `qwen3-asr-1.7b-q4_k.gguf` | 1.3 GB | [Qwen3-ASR GGUF](https://huggingface.co/cstr/qwen3-asr-1.7b-GGUF) |
-| Language detection | `firered-lid-q2_k.gguf` | 350 MB | [FireRed LID GGUF](https://huggingface.co/cstr/firered-lid-GGUF) |
+| Purpose | Local file | Variant / size | Model page | File page |
+|---|---|---|---|---|
+| English ASR | `cohere-transcribe.gguf` | F16, ~3.85 GB | [Cohere Transcribe 03-2026 GGUF](https://huggingface.co/cstr/cohere-transcribe-03-2026-GGUF) | [Download](https://huggingface.co/cstr/cohere-transcribe-03-2026-GGUF/blob/main/cohere-transcribe.gguf) |
+| Chinese ASR | `qwen3-asr-1.7b-q4_k.gguf` | Q4_K, ~1.33 GB | [Qwen3-ASR 1.7B GGUF](https://huggingface.co/cstr/qwen3-asr-1.7b-GGUF) | [Download](https://huggingface.co/cstr/qwen3-asr-1.7b-GGUF/blob/main/qwen3-asr-1.7b-q4_k.gguf) |
+| Language detection | `firered-lid-q2_k.gguf` | Q2_K, ~350 MB | [FireRed LID GGUF](https://huggingface.co/cstr/firered-lid-GGUF) | [Download](https://huggingface.co/cstr/firered-lid-GGUF/blob/main/firered-lid-q2_k.gguf) |
 
-Pass them on every run:
+The English F16 file is the highest-quality Cohere option and preserves the
+existing default. The same repository also provides smaller quantized files,
+including `cohere-transcribe-q4_k.gguf`; pass its exact local path if you choose
+that variant. All three upstream model families are Apache 2.0 licensed.
+
+For automatic English/Chinese routing, pass both ASR paths. The language probe
+runs first, and only the matching model is loaded:
 
 ```powershell
---model models\cohere-transcribe.gguf
+--english-model models\cohere-transcribe.gguf
+--chinese-model models\qwen3-asr-1.7b-q4_k.gguf
 --lid-backend firered --lid-model models\firered-lid-q2_k.gguf
 ```
+
+For an explicit `english` or `chinese` profile, `--model` remains available as
+a single-model override.
 
 ## CrispASR binary management
 
@@ -193,7 +209,8 @@ clear error asking you to re-run with `--profile english` or `--profile chinese`
 uv run python scripts/transcribe.py sample.wav `
   --profile auto `
   --manage-server `
-  --model models\qwen3-asr-1.7b-q4_k.gguf `
+  --english-model models\cohere-transcribe.gguf `
+  --chinese-model models\qwen3-asr-1.7b-q4_k.gguf `
   --lid-backend firered --lid-model models\firered-lid-q2_k.gguf `
   --format srt `
   --out-dir outputs
@@ -246,7 +263,9 @@ is deleted when transcription finishes.
 --allow-remote-server
 --manage-server
 --keep-server
---model PATH               Local GGUF model path
+--model PATH               Local GGUF override for an explicit profile
+--english-model PATH       Cohere model selected after English detection
+--chinese-model PATH       Qwen3-ASR model selected after Chinese detection
 --allow-model-auto-download
 --lid-model PATH           Local LID model path
 --lid-backend firered|silero|ecapa|whisper
@@ -330,7 +349,7 @@ and calls them as subprocesses or HTTP services at runtime.
 |---|---|---|
 | [CrispASR](https://github.com/CrispStrobe/CrispASR) | MIT | ASR engine, server, language detection |
 | [ffmpeg](https://ffmpeg.org/) | LGPL 2.1+ / GPL 2+ | Media decoding and audio extraction |
-| [Cohere Transcribe 03-2026](https://huggingface.co/cstr) | Cohere model license | English ASR model (loaded by CrispASR) |
+| [Cohere Transcribe 03-2026](https://huggingface.co/cstr/cohere-transcribe-03-2026-GGUF) | Apache 2.0 | English ASR model (loaded by CrispASR) |
 | [Qwen3-ASR 1.7B](https://huggingface.co/cstr/qwen3-asr-1.7b-GGUF) | Apache 2.0 | Chinese ASR model (loaded by CrispASR) |
 | [FireRed LID](https://huggingface.co/cstr/firered-lid-GGUF) | Apache 2.0 | Language detection model (loaded by CrispASR) |
 | [httpx](https://github.com/encode/httpx) | BSD | HTTP client for CrispASR API |

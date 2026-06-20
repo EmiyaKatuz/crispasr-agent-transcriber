@@ -7,7 +7,8 @@ Auto mode with managed server (firered LID):
 ```powershell
 uv run python scripts/transcribe.py .\talk.mp4 --profile auto `
   --manage-server `
-  --model models\cohere-transcribe.gguf `
+  --english-model models\cohere-transcribe.gguf `
+  --chinese-model models\qwen3-asr-1.7b-q4_k.gguf `
   --lid-backend firered --lid-model models\firered-lid-q2_k.gguf `
   --format vtt
 ```

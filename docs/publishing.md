@@ -13,7 +13,7 @@ be completed in this order:
 5. **Agent configurations** connect Codex, Claude Desktop, Cursor, VS Code, or
    another MCP client to the same local MCP server.
 
-The examples below use `0.3.4` as the next release version. Replace it with the
+The examples below use `0.3.5` as the next release version. Replace it with the
 version you are actually publishing. Keep the version identical in
 `pyproject.toml`, `.codex-plugin/plugin.json`, the Git tag, PyPI, and
 `server.json`.
@@ -51,8 +51,8 @@ to install it unless the SHA-256 checksum matches.
    `SHA256SUMS`:
 
    ```powershell
-   git tag v0.3.4
-   git push origin v0.3.4
+   git tag v0.3.5
+   git push origin v0.3.5
    ```
 
 5. After the GitHub Release succeeds, open **Actions > Publish npm installer >
@@ -79,7 +79,7 @@ generated transcripts.
    matching GitHub Release:
 
    ```powershell
-   $version = "0.3.4"
+   $version = "0.3.5"
    $marketplace = Join-Path $HOME "src\crispasr-agent-marketplace"
    $archive = Join-Path $env:TEMP "crispasr-plugin-$version.zip"
 
@@ -157,7 +157,7 @@ the MCP Registry entry. The package name is `crispasr-agent-transcriber`.
    `.codex-plugin/plugin.json`. Refresh the lock file and run all checks:
 
    ```powershell
-   $version = "0.3.4"
+   $version = "0.3.5"
    uv lock
    uv sync --extra dev --extra mcp
    uv run pytest
@@ -279,13 +279,13 @@ models.
        "url": "https://github.com/EmiyaKatuz/crispasr-agent-transcriber",
        "source": "github"
      },
-     "version": "0.3.4",
+     "version": "0.3.5",
      "packages": [
        {
          "registryType": "pypi",
          "registryBaseUrl": "https://pypi.org",
          "identifier": "crispasr-agent-transcriber",
-         "version": "0.3.4",
+         "version": "0.3.5",
          "runtimeHint": "uvx",
          "transport": {
            "type": "stdio"
@@ -326,7 +326,7 @@ Until the PyPI package is published, use the tagged GitHub command shown in
 use this common launch command in MCP clients:
 
 ```powershell
-uvx --from "crispasr-agent-transcriber[mcp]==0.3.4" crispasr-agent-mcp
+uvx --from "crispasr-agent-transcriber[mcp]==0.3.5" crispasr-agent-mcp
 ```
 
 First run `(Get-Command uvx).Source` in PowerShell. If a desktop client cannot
@@ -336,7 +336,7 @@ find `uvx`, use the returned absolute path as the configuration's `command`.
 
 ```powershell
 codex mcp add crispasr-agent-transcriber -- `
-  uvx --from "crispasr-agent-transcriber[mcp]==0.3.4" crispasr-agent-mcp
+  uvx --from "crispasr-agent-transcriber[mcp]==0.3.5" crispasr-agent-mcp
 ```
 
 Start a new Codex session and ask it to list the CrispASR tools.
@@ -354,7 +354,7 @@ globally. Merge this server into the existing `mcpServers` object:
       "command": "uvx",
       "args": [
         "--from",
-        "crispasr-agent-transcriber[mcp]==0.3.4",
+        "crispasr-agent-transcriber[mcp]==0.3.5",
         "crispasr-agent-mcp"
       ]
     }
@@ -378,7 +378,7 @@ Configuration** for a user-wide setup. VS Code uses `servers` instead of
       "command": "uvx",
       "args": [
         "--from",
-        "crispasr-agent-transcriber[mcp]==0.3.4",
+        "crispasr-agent-transcriber[mcp]==0.3.5",
         "crispasr-agent-mcp"
       ]
     }

@@ -49,7 +49,7 @@ Place these three GGUF files in `models/`:
 
 | Purpose | File | ~Size | Source |
 |---|---|---|---|
-| English ASR | `cohere-transcribe.gguf` | 3.9 GB | [Cohere on HuggingFace](https://huggingface.co/cstr) |
+| English ASR | `cohere-transcribe.gguf` | 3.85 GB | [Cohere Transcribe 03-2026 GGUF](https://huggingface.co/cstr/cohere-transcribe-03-2026-GGUF) |
 | Chinese ASR | `qwen3-asr-1.7b-q4_k.gguf` | 1.3 GB | [Qwen3-ASR GGUF](https://huggingface.co/cstr/qwen3-asr-1.7b-GGUF) |
 | Language detection | `firered-lid-q2_k.gguf` | 350 MB | [FireRed LID GGUF](https://huggingface.co/cstr/firered-lid-GGUF) |
 
@@ -85,7 +85,8 @@ Codex will use the skill or MCP tools automatically.
 ```powershell
 uv run python scripts/transcribe.py sample.mp4 `
   --profile auto --manage-server `
-  --model models\cohere-transcribe.gguf `
+  --english-model models\cohere-transcribe.gguf `
+  --chinese-model models\qwen3-asr-1.7b-q4_k.gguf `
   --lid-backend firered --lid-model models\firered-lid-q2_k.gguf `
   --format verbose_json
 ```
@@ -108,6 +109,6 @@ MIT. See [LICENSE](LICENSE).
 |---|---|---|
 | [CrispASR](https://github.com/CrispStrobe/CrispASR) | MIT | ASR engine |
 | [ffmpeg](https://ffmpeg.org/) | LGPL/GPL | Media decoding |
-| [Cohere Transcribe](https://huggingface.co/cstr) | Cohere license | English ASR model |
+| [Cohere Transcribe](https://huggingface.co/cstr/cohere-transcribe-03-2026-GGUF) | Apache 2.0 | English ASR model |
 | [Qwen3-ASR 1.7B](https://huggingface.co/cstr/qwen3-asr-1.7b-GGUF) | Apache 2.0 | Chinese ASR model |
 | [FireRed LID](https://huggingface.co/cstr/firered-lid-GGUF) | Apache 2.0 | Language detection model |

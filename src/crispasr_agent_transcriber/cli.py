@@ -64,7 +64,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--model",
-        help="Local GGUF model path for managed server mode. Avoids automatic model downloads.",
+        help="Local GGUF model path override for managed server mode.",
+    )
+    parser.add_argument(
+        "--english-model",
+        help="Local Cohere GGUF path selected when the resolved profile is English.",
+    )
+    parser.add_argument(
+        "--chinese-model",
+        help="Local Qwen3-ASR GGUF path selected when the resolved profile is Chinese.",
     )
     parser.add_argument(
         "--allow-model-auto-download",
@@ -193,6 +201,8 @@ def main(argv: list[str] | None = None) -> int:
             keep_server=args.keep_server,
             crispasr_bin=crispasr_bin,
             model=args.model,
+            english_model=args.english_model,
+            chinese_model=args.chinese_model,
             allow_model_auto_download=args.allow_model_auto_download,
             host=args.host,
             port=args.port,

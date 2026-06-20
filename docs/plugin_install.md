@@ -68,7 +68,7 @@ Place these in the `models/` directory:
 
 | Purpose | File | Source |
 |---|---|---|
-| English ASR | `cohere-transcribe.gguf` | [HuggingFace cstr](https://huggingface.co/cstr) |
+| English ASR | `cohere-transcribe.gguf` | [Cohere Transcribe 03-2026 GGUF](https://huggingface.co/cstr/cohere-transcribe-03-2026-GGUF) |
 | Chinese ASR | `qwen3-asr-1.7b-q4_k.gguf` | [Qwen3-ASR GGUF](https://huggingface.co/cstr/qwen3-asr-1.7b-GGUF) |
 | Language detection | `firered-lid-q2_k.gguf` | [FireRed LID GGUF](https://huggingface.co/cstr/firered-lid-GGUF) |
 
@@ -152,5 +152,5 @@ uv run --extra mcp python -m crispasr_mcp.server
 ### Running the CLI
 
 ```powershell
-uv run python scripts/transcribe.py file.mp4 --profile auto --manage-server --model models\cohere-transcribe.gguf --lid-backend firered --lid-model models\firered-lid-q2_k.gguf --format srt
+uv run python scripts/transcribe.py file.mp4 --profile auto --manage-server --english-model models\cohere-transcribe.gguf --chinese-model models\qwen3-asr-1.7b-q4_k.gguf --lid-backend firered --lid-model models\firered-lid-q2_k.gguf --format srt
 ```

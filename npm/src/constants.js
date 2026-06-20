@@ -18,7 +18,7 @@ export const MODEL_SPECS = [
   {
     purpose: "English transcription",
     filename: "cohere-transcribe.gguf",
-    url: "https://huggingface.co/cstr",
+    url: "https://huggingface.co/cstr/cohere-transcribe-03-2026-GGUF",
   },
   {
     purpose: "Chinese transcription",

@@ -37,3 +37,14 @@ def test_readme_contains_mcp_registry_ownership_marker() -> None:
         "<!-- mcp-name: io.github.EmiyaKatuz/crispasr-agent-transcriber -->"
         in readme
     )
+
+
+def test_readme_uses_exact_model_sources_and_auto_model_flags() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8-sig")
+
+    assert "https://huggingface.co/cstr/cohere-transcribe-03-2026-GGUF" in readme
+    assert "https://huggingface.co/cstr/qwen3-asr-1.7b-GGUF" in readme
+    assert "https://huggingface.co/cstr/firered-lid-GGUF" in readme
+    assert "[Cohere on HuggingFace](https://huggingface.co/cstr)" not in readme
+    assert "--english-model" in readme
+    assert "--chinese-model" in readme

@@ -19,7 +19,7 @@ uploaded to a remote service.
 Use the tagged GitHub release as the package source:
 
 ```powershell
-uvx --from "crispasr-agent-transcriber[mcp] @ git+https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git@v0.3.4" crispasr-agent-mcp
+uvx --from "crispasr-agent-transcriber[mcp] @ git+https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git@v0.3.5" crispasr-agent-mcp
 ```
 
 The process uses MCP stdio and stays running while the client is connected.
@@ -36,7 +36,7 @@ environment variables:
       "command": "uvx",
       "args": [
         "--from",
-        "crispasr-agent-transcriber[mcp] @ git+https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git@v0.3.4",
+        "crispasr-agent-transcriber[mcp] @ git+https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git@v0.3.5",
         "crispasr-agent-mcp"
       ]
     }
@@ -50,7 +50,7 @@ Clients that use a different outer key can reuse the same `command` and
 ## Codex CLI
 
 ```powershell
-codex mcp add crispasr-agent-transcriber -- uvx --from "crispasr-agent-transcriber[mcp] @ git+https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git@v0.3.4" crispasr-agent-mcp
+codex mcp add crispasr-agent-transcriber -- uvx --from "crispasr-agent-transcriber[mcp] @ git+https://github.com/EmiyaKatuz/crispasr-agent-transcriber.git@v0.3.5" crispasr-agent-mcp
 ```
 
 The Codex plugin remains the preferred Codex installation because it also
@@ -67,6 +67,8 @@ client after changing the configuration.
 The MCP tools accept explicit local paths for:
 
 - `model`: the selected transcription model
+- `english_model`: the Cohere model selected after English detection
+- `chinese_model`: the Qwen3-ASR model selected after Chinese detection
 - `lid_model`: the FireRed language detection model used by `profile=auto`
 - `crispasr_bin`: an explicit CrispASR executable when auto-discovery is not
   appropriate

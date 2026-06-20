@@ -39,10 +39,27 @@ def _resolve_model_for_managed_server(
         return model or "auto"
     raise ServerError(
         "Managed server mode needs a local model path. "
-        "Pass --model path\\to\\model.gguf, or manually start CrispASR yourself. "
+        "Pass --model path\\to\\model.gguf, or use --english-model and "
+        "--chinese-model with auto routing. You can also start CrispASR yourself. "
         "Use --allow-model-auto-download only if you want CrispASR to download a model.",
         model=model or "auto",
     )
+
+
+def _select_model_for_profile(
+    *,
+    profile_name: str,
+    model: str | None,
+    english_model: str | None,
+    chinese_model: str | None,
+) -> str | None:
+    if model:
+        return model
+    if profile_name == "english":
+        return english_model
+    if profile_name == "chinese":
+        return chinese_model
+    return None
 
 
 def _write_outputs(
@@ -99,6 +116,8 @@ def run_transcription(
     keep_server: bool = False,
     crispasr_bin: str = "crispasr",
     model: str | None = None,
+    english_model: str | None = None,
+    chinese_model: str | None = None,
     allow_model_auto_download: bool = False,
     host: str = "127.0.0.1",
     port: int = 8080,
@@ -118,15 +137,6 @@ def run_transcription(
     detection: LanguageDetectionResult | None = None
 
     with prepare_media(input_path, preprocess=preprocess) as prepared:
-        managed_model = (
-            _resolve_model_for_managed_server(
-                model=model,
-                allow_model_auto_download=allow_model_auto_download,
-            )
-            if manage_server
-            else model
-        )
-
         # Language detection (standalone CLI, before server start)
         if profile_name == "auto":
             if not lid_model:
@@ -143,6 +153,21 @@ def run_transcription(
             profile = get_profile(detection.decision)
         else:
             profile = get_profile(profile_name)
+
+        selected_model = _select_model_for_profile(
+            profile_name=profile.name,
+            model=model,
+            english_model=english_model,
+            chinese_model=chinese_model,
+        )
+        managed_model = (
+            _resolve_model_for_managed_server(
+                model=selected_model,
+                allow_model_auto_download=allow_model_auto_download,
+            )
+            if manage_server
+            else selected_model
+        )
 
         # Start or connect to server
         active_server_url = server_url

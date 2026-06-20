@@ -17,8 +17,8 @@
 Tag:
 
 ```powershell
-git tag v0.3.4
-git push origin v0.3.4
+git tag v0.3.5
+git push origin v0.3.5
 ```
 
 The Release workflow builds and uploads:

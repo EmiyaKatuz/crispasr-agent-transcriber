@@ -6,7 +6,8 @@ Auto-route a file through the matching local backend:
 
 ```powershell
 uv run python scripts/transcribe.py .\meeting.mp4 --profile auto --manage-server `
-  --model models\cohere-transcribe.gguf `
+  --english-model models\cohere-transcribe.gguf `
+  --chinese-model models\qwen3-asr-1.7b-q4_k.gguf `
   --lid-backend firered --lid-model models\firered-lid-q2_k.gguf `
   --format verbose_json
 ```

@@ -9,9 +9,10 @@ import test from "node:test";
 import AdmZip from "adm-zip";
 
 import { doctor, installPlugin, uninstallPlugin } from "../src/installer.js";
+import { MODEL_SPECS } from "../src/constants.js";
 import { InstallerError } from "../src/errors.js";
 
-const VERSION = "0.3.4";
+const VERSION = "0.3.5";
 const ARCHIVE_NAME = `crispasr-agent-transcriber-plugin-${VERSION}.zip`;
 
 function createBundle(filePath, readmeText) {
@@ -27,6 +28,16 @@ function createBundle(filePath, readmeText) {
   archive.addFile(`${root}pyproject.toml`, Buffer.from("[project]\nname='test'\n"));
   archive.writeZip(filePath);
 }
+
+test("model sources point to exact Hugging Face repositories", () => {
+  assert.equal(
+    MODEL_SPECS.find((model) => model.filename === "cohere-transcribe.gguf")?.url,
+    "https://huggingface.co/cstr/cohere-transcribe-03-2026-GGUF",
+  );
+  for (const model of MODEL_SPECS) {
+    assert.notEqual(model.url, "https://huggingface.co/cstr");
+  }
+});
 
 function sha256(filePath) {
   return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");

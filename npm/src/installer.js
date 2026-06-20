@@ -197,7 +197,7 @@ export async function installPlugin(options = {}) {
 
   if (!RELEASE_VERSION_RE.test(version)) {
     throw new InstallerError(
-      "Release versions must use semantic version syntax such as 0.3.4.",
+      "Release versions must use semantic version syntax such as 0.3.5.",
       "invalid_release_version",
       { version },
     );

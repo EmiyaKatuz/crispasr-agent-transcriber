@@ -1,6 +1,6 @@
 {
   "name": "crispasr-agent-transcriber",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Transcribe local audio or video files through CrispASR with local models only. Auto-detects English vs Chinese, routes to Cohere Transcribe or Qwen3-ASR, and extracts audio from video with ffmpeg. No cloud uploads.",
   "author": {
     "name": "crispasr-agent-transcriber contributors",
