@@ -24,6 +24,9 @@ transcripts/
 *.vtt
 *.transcript.json
 *.metadata.json
+*.video_understanding.json
+*.agent_context.json
+*.keyframes/
 
 # OS/editor noise.
 .DS_Store

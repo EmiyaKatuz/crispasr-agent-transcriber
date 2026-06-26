@@ -8,7 +8,7 @@ import test from "node:test";
 
 import AdmZip from "adm-zip";
 
-import { doctor, installPlugin, uninstallPlugin } from "../src/installer.js";
+import { doctor, downloadModels, installPlugin, uninstallPlugin } from "../src/installer.js";
 import { MODEL_SPECS } from "../src/constants.js";
 import { InstallerError } from "../src/errors.js";
 
@@ -31,8 +31,12 @@ function createBundle(filePath, readmeText) {
 
 test("model sources point to exact Hugging Face repositories", () => {
   assert.equal(
-    MODEL_SPECS.find((model) => model.filename === "cohere-transcribe.gguf")?.url,
+    MODEL_SPECS.find((model) => model.id === "english-q4")?.url,
     "https://huggingface.co/cstr/cohere-transcribe-03-2026-GGUF",
+  );
+  assert.equal(
+    MODEL_SPECS.find((model) => model.id === "english-q4")?.downloadUrl,
+    "https://huggingface.co/cstr/cohere-transcribe-03-2026-GGUF/resolve/main/cohere-transcribe-q4_k.gguf",
   );
   for (const model of MODEL_SPECS) {
     assert.notEqual(model.url, "https://huggingface.co/cstr");
@@ -171,4 +175,63 @@ test("purge requires the npm installer ownership marker", () => {
   } finally {
     fs.rmSync(temporary, { recursive: true, force: true });
   }
+});
+
+test("downloadModels downloads only approved model ids and writes a manifest", async () => {
+  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "crispasr-model-test-"));
+  const homeDir = path.join(temporary, "home");
+  const targetDir = path.join(homeDir, "plugins", "crispasr-agent-transcriber");
+  const requests = [];
+  try {
+    const result = await downloadModels({
+      homeDir,
+      targetDir,
+      modelIds: ["english-q4"],
+      fetchImpl: async (url) => {
+        requests.push(url);
+        return {
+          ok: true,
+          status: 200,
+          arrayBuffer: async () => Buffer.from("model-data"),
+        };
+      },
+    });
+
+    const modelPath = path.join(targetDir, "models", "cohere-transcribe-q4_k.gguf");
+    assert.equal(requests.length, 1);
+    assert.equal(
+      requests[0],
+      "https://huggingface.co/cstr/cohere-transcribe-03-2026-GGUF/resolve/main/cohere-transcribe-q4_k.gguf",
+    );
+    assert.equal(fs.readFileSync(modelPath, "utf8"), "model-data");
+    assert.equal(fs.existsSync(path.join(targetDir, "models", "model-manifest.json")), true);
+    assert.equal(result.results[0].downloaded, true);
+
+    const skipped = await downloadModels({
+      homeDir,
+      targetDir,
+      modelIds: ["english-q4"],
+      fetchImpl: async () => {
+        throw new Error("should not refetch");
+      },
+    });
+    assert.equal(skipped.results[0].skipped, true);
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true });
+  }
+});
+
+test("downloadModels dry run does not fetch", async () => {
+  const result = await downloadModels({
+    homeDir: os.tmpdir(),
+    targetDir: path.join(os.tmpdir(), "crispasr-dry-run-models"),
+    modelIds: ["lid-q4"],
+    dryRun: true,
+    fetchImpl: async () => {
+      throw new Error("should not fetch in dry run");
+    },
+  });
+  assert.equal(result.dryRun, true);
+  assert.equal(result.plan.length, 1);
+  assert.match(result.plan[0], /lid-q4/);
 });

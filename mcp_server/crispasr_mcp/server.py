@@ -12,8 +12,12 @@ mcp = FastMCP("crispasr-agent-transcriber")
 mcp.tool()(tools.crispasr_health)
 mcp.tool()(tools.crispasr_backends)
 mcp.tool()(tools.crispasr_detect_language)
+mcp.tool()(tools.crispasr_list_models)
+mcp.tool()(tools.crispasr_download_models)
+mcp.tool()(tools.crispasr_resolve_model_paths)
 mcp.tool()(tools.transcribe_audio)
 mcp.tool()(tools.transcribe_video)
+mcp.tool()(tools.understand_video)
 mcp.tool()(tools.transcribe_folder)
 
 

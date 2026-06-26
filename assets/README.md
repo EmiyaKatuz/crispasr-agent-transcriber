@@ -8,6 +8,7 @@ A Codex plugin for transcribing local audio or video files through
 - Auto-detects English vs Chinese using FireRed LID
 - Routes English to Cohere Transcribe, Chinese to Qwen3-ASR 1.7B
 - Extracts audio from video with ffmpeg
+- Captures synchronized keyframes for agent-readable video understanding
 - Outputs text, verbose JSON, SRT, or VTT
 - GPU acceleration: CUDA > Vulkan > CPU
 - No cloud uploads, no API keys
@@ -45,13 +46,14 @@ from the Personal marketplace in the Codex desktop Plugins view.
 
 ### Download models
 
-Place these three GGUF files in `models/`:
+Run `npx @emiyakatuz/crispasr-agent-transcriber@latest models`, or place these
+three GGUF files in `models/`:
 
 | Purpose | File | ~Size | Source |
 |---|---|---|---|
-| English ASR | `cohere-transcribe.gguf` | 3.85 GB | [Cohere Transcribe 03-2026 GGUF](https://huggingface.co/cstr/cohere-transcribe-03-2026-GGUF) |
+| English ASR | `cohere-transcribe-q4_k.gguf` | smaller default | [Cohere Transcribe 03-2026 GGUF](https://huggingface.co/cstr/cohere-transcribe-03-2026-GGUF) |
 | Chinese ASR | `qwen3-asr-1.7b-q4_k.gguf` | 1.3 GB | [Qwen3-ASR GGUF](https://huggingface.co/cstr/qwen3-asr-1.7b-GGUF) |
-| Language detection | `firered-lid-q2_k.gguf` | 350 MB | [FireRed LID GGUF](https://huggingface.co/cstr/firered-lid-GGUF) |
+| Language detection | `firered-lid-q4_k.gguf` | default | [FireRed LID GGUF](https://huggingface.co/cstr/firered-lid-GGUF) |
 
 ## Skills
 
@@ -64,8 +66,12 @@ Place these three GGUF files in `models/`:
 | `crispasr_health` | Check CrispASR server health |
 | `crispasr_backends` | List available backends |
 | `crispasr_detect_language` | Run language detection on a file |
+| `crispasr_list_models` | List approved model choices and install status |
+| `crispasr_download_models` | Explicitly download approved local models |
+| `crispasr_resolve_model_paths` | Return recommended model paths |
 | `transcribe_audio` | Transcribe an audio file |
 | `transcribe_video` | Transcribe a video file |
+| `understand_video` | Transcribe video, capture synced keyframes, and return an agent context |
 | `transcribe_folder` | Batch-transcribe a folder |
 
 ## Usage
@@ -85,9 +91,7 @@ Codex will use the skill or MCP tools automatically.
 ```powershell
 uv run python scripts/transcribe.py sample.mp4 `
   --profile auto --manage-server `
-  --english-model models\cohere-transcribe.gguf `
-  --chinese-model models\qwen3-asr-1.7b-q4_k.gguf `
-  --lid-backend firered --lid-model models\firered-lid-q2_k.gguf `
+  --models-dir models `
   --format verbose_json
 ```
 
@@ -97,7 +101,7 @@ uv run python scripts/transcribe.py sample.mp4 `
 - Only localhost servers by default
 - No URL inputs — local files only
 - ffmpeg called with argument lists, never shell=True
-- No model downloads unless explicitly enabled
+- No model downloads unless explicitly requested
 
 ## License
 

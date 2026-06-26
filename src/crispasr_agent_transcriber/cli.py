@@ -14,6 +14,7 @@ from .crispasr_manager import (
     find_binary,
 )
 from .errors import TranscriberError
+from .models import download_models, list_model_options, resolve_recommended_model_paths
 from .workflow import run_transcription
 
 
@@ -79,6 +80,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Allow managed server mode to pass -m auto to CrispASR.",
     )
+    parser.add_argument(
+        "--models-dir",
+        default=os.environ.get("CRISPASR_MODELS_DIR", "models"),
+        help="Directory containing approved local GGUF models.",
+    )
     parser.add_argument("--host", default="127.0.0.1", help="Managed server host.")
     parser.add_argument("--port", type=int, default=8080, help="Managed server port.")
     parser.add_argument(
@@ -124,6 +130,27 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Show installed CrispASR version and check for updates.",
     )
+    setup_group.add_argument(
+        "--list-models",
+        action="store_true",
+        help="List approved GGUF models and show which recommended files are installed.",
+    )
+    setup_group.add_argument(
+        "--download-models",
+        action="store_true",
+        help="Download the recommended English, Chinese, and LID GGUF models.",
+    )
+    setup_group.add_argument(
+        "--model-id",
+        action="append",
+        dest="model_ids",
+        help="With --download-models, download this model id instead of the default bundle.",
+    )
+    setup_group.add_argument(
+        "--overwrite-models",
+        action="store_true",
+        help="Replace existing model files when used with --download-models.",
+    )
     return parser
 
 
@@ -139,6 +166,31 @@ def _resolve_crispasr_bin(args: argparse.Namespace) -> str:
 
 def _handle_setup_command(args: argparse.Namespace) -> int:
     bin_dir = Path(args.crispasr_bin_dir)
+
+    if args.list_models:
+        options = list_model_options(args.models_dir)
+        print(f"Models directory: {options['models_dir']}")
+        print(f"Recommended bundle ready: {'yes' if options['ready'] else 'no'}")
+        for model in options["models"]:
+            marker = "*" if model["recommended"] else "-"
+            state = "installed" if model["installed"] else "missing"
+            print(f"{marker} {model['id']} ({model['purpose']}, {model['quantization']}): {state}")
+            print(f"  file: {model['path']}")
+            print(f"  source: {model['source_url']}")
+        return 0
+
+    if args.download_models:
+        result = download_models(
+            args.model_ids,
+            models_dir=args.models_dir,
+            overwrite=args.overwrite_models,
+        )
+        print(f"Models directory: {result['models_dir']}")
+        for item in result["results"]:
+            action = "downloaded" if item["downloaded"] else "skipped"
+            print(f"{action}: {item['id']} -> {item['path']}")
+        print(f"Recommended bundle ready: {'yes' if result['ready'] else 'no'}")
+        return 0
 
     if args.crispasr_status:
         current = find_binary(bin_dir=bin_dir)
@@ -190,6 +242,22 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         crispasr_bin = _resolve_crispasr_bin(args)
+        model_defaults = resolve_recommended_model_paths(args.models_dir)
+        default_english_model = (
+            model_defaults["english_model"]
+            if model_defaults["english_model"] and Path(model_defaults["english_model"]).is_file()
+            else None
+        )
+        default_chinese_model = (
+            model_defaults["chinese_model"]
+            if model_defaults["chinese_model"] and Path(model_defaults["chinese_model"]).is_file()
+            else None
+        )
+        default_lid_model = (
+            model_defaults["lid_model"]
+            if model_defaults["lid_model"] and Path(model_defaults["lid_model"]).is_file()
+            else None
+        )
         result = run_transcription(
             Path(args.input),
             profile_name=args.profile,
@@ -201,8 +269,8 @@ def main(argv: list[str] | None = None) -> int:
             keep_server=args.keep_server,
             crispasr_bin=crispasr_bin,
             model=args.model,
-            english_model=args.english_model,
-            chinese_model=args.chinese_model,
+            english_model=args.english_model or default_english_model,
+            chinese_model=args.chinese_model or default_chinese_model,
             allow_model_auto_download=args.allow_model_auto_download,
             host=args.host,
             port=args.port,
@@ -216,7 +284,7 @@ def main(argv: list[str] | None = None) -> int:
             no_timestamps=args.no_timestamps,
             api_key=args.api_key,
             lid_backend=args.lid_backend,
-            lid_model=args.lid_model,
+            lid_model=args.lid_model or default_lid_model,
         )
     except TranscriberError as exc:
         print(json.dumps(exc.to_dict(), ensure_ascii=False, indent=2), file=sys.stderr)

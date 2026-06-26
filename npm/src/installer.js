@@ -1,12 +1,15 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 
 import {
   MANAGED_ENTRIES,
   MODEL_SPECS,
   PACKAGE_VERSION,
   PLUGIN_NAME,
+  RECOMMENDED_MODEL_IDS,
   defaultMarketplacePath,
   defaultReleaseBase,
   defaultTargetDir,
@@ -21,6 +24,7 @@ import { extractZipSafely, fetchReleaseBundle } from "./release.js";
 import { crispasrExecutableName, findCommand, runCommand } from "./system.js";
 
 const MARKER_FILE = ".crispasr-installer.json";
+const MODEL_MANIFEST = "model-manifest.json";
 const RELEASE_VERSION_RE = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
 
 function resolvedPath(value) {
@@ -170,6 +174,170 @@ export function inspectModels(targetDir) {
   }));
 }
 
+function recommendedModels(targetDir) {
+  return inspectModels(targetDir).filter((model) => RECOMMENDED_MODEL_IDS.includes(model.id));
+}
+
+export function resolveModelPaths(targetDir) {
+  const recommended = recommendedModels(targetDir);
+  return {
+    targetDir,
+    modelsDir: path.join(targetDir, "models"),
+    ready: recommended.every((model) => model.installed),
+    recommendedModelIds: RECOMMENDED_MODEL_IDS,
+    englishModel: recommended.find((model) => model.role === "english")?.path || null,
+    chineseModel: recommended.find((model) => model.role === "chinese")?.path || null,
+    lidModel: recommended.find((model) => model.role === "lid")?.path || null,
+    missingModels: recommended.filter((model) => !model.installed),
+  };
+}
+
+function findModelSpec(modelId) {
+  const normalized = modelId.toLowerCase();
+  const match = MODEL_SPECS.find(
+    (model) => model.id === normalized || model.filename.toLowerCase() === normalized,
+  );
+  if (!match) {
+    throw new InstallerError("Unknown CrispASR model id.", "unknown_model", {
+      modelId,
+      knownIds: MODEL_SPECS.map((model) => model.id),
+    });
+  }
+  return match;
+}
+
+async function writeResponseBody(response, destination) {
+  if (response.body) {
+    await pipeline(Readable.fromWeb(response.body), fs.createWriteStream(destination));
+    return;
+  }
+  if (response.arrayBuffer) {
+    fs.writeFileSync(destination, Buffer.from(await response.arrayBuffer()));
+    return;
+  }
+  throw new InstallerError("The model download response did not include a body.", "empty_model_download");
+}
+
+function writeModelManifest(modelsDir, entries) {
+  const manifestPath = path.join(modelsDir, MODEL_MANIFEST);
+  let existing = { models: [] };
+  if (fs.existsSync(manifestPath)) {
+    try {
+      existing = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+    } catch {
+      existing = { models: [] };
+    }
+  }
+  const byId = new Map(
+    (existing.models || []).filter((item) => item.id).map((item) => [item.id, item]),
+  );
+  for (const entry of entries) byId.set(entry.id, entry);
+  const manifest = {
+    updatedAt: new Date().toISOString(),
+    models: [...byId.values()].sort((a, b) => a.id.localeCompare(b.id)),
+  };
+  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  return manifestPath;
+}
+
+async function downloadOneModel(spec, modelsDir, options) {
+  const destination = path.join(modelsDir, spec.filename);
+  if (fs.existsSync(destination) && !options.overwrite) {
+    return {
+      id: spec.id,
+      filename: spec.filename,
+      path: destination,
+      downloaded: false,
+      skipped: true,
+      reason: "already_exists",
+      url: spec.url,
+    };
+  }
+
+  const fetchImpl = options.fetchImpl || globalThis.fetch;
+  if (!fetchImpl) {
+    throw new InstallerError("This Node.js runtime does not provide fetch.", "fetch_unavailable");
+  }
+
+  const partial = `${destination}.part`;
+  try {
+    const response = await fetchImpl(spec.downloadUrl);
+    if (!response.ok) {
+      throw new InstallerError("Model download request failed.", "model_download_failed", {
+        modelId: spec.id,
+        status: response.status,
+        url: spec.downloadUrl,
+      });
+    }
+    await writeResponseBody(response, partial);
+    if (options.overwrite) fs.rmSync(destination, { force: true });
+    fs.renameSync(partial, destination);
+  } catch (error) {
+    fs.rmSync(partial, { force: true });
+    if (error instanceof InstallerError) throw error;
+    throw new InstallerError("Model download failed.", "model_download_failed", {
+      modelId: spec.id,
+      url: spec.downloadUrl,
+      message: error.message,
+    });
+  }
+
+  return {
+    id: spec.id,
+    role: spec.role,
+    filename: spec.filename,
+    path: destination,
+    downloaded: true,
+    skipped: false,
+    url: spec.url,
+    downloadUrl: spec.downloadUrl,
+    downloadedAt: new Date().toISOString(),
+    sizeBytes: fs.statSync(destination).size,
+  };
+}
+
+export async function downloadModels(options = {}) {
+  const homeDir = options.homeDir || os.homedir();
+  const targetDir = assertSafeTarget(options.targetDir || defaultTargetDir(homeDir), homeDir);
+  const modelsDir = path.join(targetDir, "models");
+  const requestedIds = options.modelIds?.length ? options.modelIds : RECOMMENDED_MODEL_IDS;
+  const specs = requestedIds.map((modelId) => findModelSpec(modelId));
+
+  if (options.dryRun) {
+    return {
+      command: "models",
+      dryRun: true,
+      targetDir,
+      plan: specs.map((spec) => `Download ${spec.id} (${spec.filename}) to ${modelsDir}`),
+    };
+  }
+
+  fs.mkdirSync(modelsDir, { recursive: true });
+  const results = [];
+  for (const spec of specs) {
+    results.push(await downloadOneModel(spec, modelsDir, options));
+  }
+  const downloaded = results.filter((item) => item.downloaded);
+  const manifestPath = downloaded.length > 0 ? writeModelManifest(modelsDir, downloaded) : null;
+  const paths = resolveModelPaths(targetDir);
+  return {
+    command: "models",
+    targetDir,
+    modelsDir,
+    modelIds: requestedIds,
+    results,
+    manifestPath,
+    ready: paths.ready,
+    recommendedModelIds: RECOMMENDED_MODEL_IDS,
+    recommendedPaths: {
+      englishModel: paths.englishModel,
+      chineseModel: paths.chineseModel,
+      lidModel: paths.lidModel,
+    },
+    missingModels: paths.missingModels,
+  };
+}
+
 function installPlan({ targetDir, version, marketplacePath, update }) {
   return [
     `Download and verify GitHub Release v${version}`,
@@ -177,7 +345,7 @@ function installPlan({ targetDir, version, marketplacePath, update }) {
     "Install Python and MCP dependencies with uv",
     `${update ? "Update" : "Install"} the GPU-preferred CrispASR binary`,
     `Register the Codex Personal marketplace entry in ${marketplacePath}`,
-    "Check for the three manually supplied local model files",
+    "Check for the three recommended local model files",
   ];
 }
 
@@ -277,7 +445,7 @@ export async function installPlugin(options = {}) {
     }
 
     const models = inspectModels(targetDir);
-    const missingModels = models.filter((model) => !model.installed);
+    const missingModels = models.filter((model) => model.recommended && !model.installed);
     return {
       command: update ? "update" : "install",
       targetDir,
@@ -326,8 +494,9 @@ export function doctor(options = {}) {
       path: marketplacePath,
     },
     models: {
-      ok: models.every((model) => model.installed),
+      ok: models.filter((model) => model.recommended).every((model) => model.installed),
       items: models,
+      recommendedModelIds: RECOMMENDED_MODEL_IDS,
     },
   };
   return {

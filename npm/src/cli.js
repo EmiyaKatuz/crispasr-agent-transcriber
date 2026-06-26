@@ -1,18 +1,20 @@
 import { PACKAGE_NAME, PACKAGE_VERSION } from "./constants.js";
 import { InstallerError } from "./errors.js";
-import { doctor, installPlugin, uninstallPlugin } from "./installer.js";
+import { doctor, downloadModels, installPlugin, uninstallPlugin } from "./installer.js";
 
 const HELP = `CrispASR Agent Transcriber installer
 
 Usage:
   crispasr-agent-transcriber [install] [options]
   crispasr-agent-transcriber update [options]
+  crispasr-agent-transcriber models [options]
   crispasr-agent-transcriber doctor [options]
   crispasr-agent-transcriber uninstall [options]
 
 Commands:
   install      Install the Codex plugin, MCP dependencies, and CrispASR (default)
   update       Update plugin files and the GPU-preferred CrispASR binary
+  models       Download approved local GGUF models into the plugin models directory
   doctor       Check prerequisites, plugin files, CrispASR, and local models
   uninstall    Remove managed plugin files and Codex registration
 
@@ -22,6 +24,8 @@ Options:
   --release VERSION       Install a matching GitHub Release version
   --json                  Print stable JSON to stdout
   --dry-run               Show install/update actions without changing files
+  --model-id ID           With models, download this model id; repeat for many
+  --overwrite-models      With models, replace existing local model files
   --skip-crispasr         Do not install or update the CrispASR binary
   --skip-deps             Do not run uv sync
   --no-marketplace        Do not modify the Personal Codex marketplace
@@ -29,8 +33,8 @@ Options:
   -v, --version           Print installer version
   -h, --help              Show this help
 
-Models are never downloaded automatically. When they are missing, installation
-stops after printing the exact filenames and source links.
+Models are never downloaded during install/update. Run the models command to
+download the recommended local English, Chinese, and language-detection bundle.
 `;
 
 function parseArgs(argv) {
@@ -38,7 +42,7 @@ function parseArgs(argv) {
   let command = null;
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index];
-    if (["install", "update", "doctor", "uninstall"].includes(value) && !command) {
+    if (["install", "update", "models", "doctor", "uninstall"].includes(value) && !command) {
       command = value;
       continue;
     }
@@ -48,9 +52,10 @@ function parseArgs(argv) {
     else if (value === "--skip-deps") options.skipDependencies = true;
     else if (value === "--no-marketplace") options.skipMarketplace = true;
     else if (value === "--purge-data") options.purgeData = true;
+    else if (value === "--overwrite-models") options.overwrite = true;
     else if (value === "--help" || value === "-h") options.help = true;
     else if (value === "--version" || value === "-v") options.version = true;
-    else if (["--target-dir", "--marketplace-path", "--release"].includes(value)) {
+    else if (["--target-dir", "--marketplace-path", "--release", "--model-id"].includes(value)) {
       const next = argv[index + 1];
       if (!next || next.startsWith("--")) {
         throw new InstallerError(`${value} requires a value.`, "invalid_arguments");
@@ -59,6 +64,10 @@ function parseArgs(argv) {
       if (value === "--target-dir") options.targetDir = next;
       if (value === "--marketplace-path") options.marketplacePath = next;
       if (value === "--release") options.releaseVersion = next.replace(/^v/, "");
+      if (value === "--model-id") {
+        options.modelIds ||= [];
+        options.modelIds.push(next);
+      }
     } else {
       throw new InstallerError(`Unknown argument: ${value}`, "invalid_arguments");
     }
@@ -76,6 +85,22 @@ function printHumanResult(result) {
     process.stdout.write(`Ready: ${result.ready ? "yes" : "no"}\n`);
     for (const [name, check] of Object.entries(result.checks)) {
       process.stdout.write(`${check.ok ? "[ok]" : "[missing]"} ${name}\n`);
+    }
+    return;
+  }
+  if (result.command === "models") {
+    process.stdout.write(`Models directory: ${result.modelsDir}\n`);
+    for (const item of result.results) {
+      process.stdout.write(
+        `${item.downloaded ? "[downloaded]" : "[skipped]"} ${item.id} -> ${item.path}\n`,
+      );
+    }
+    process.stdout.write(`Recommended bundle ready: ${result.ready ? "yes" : "no"}\n`);
+    if (!result.ready) {
+      process.stdout.write("Missing recommended models:\n");
+      for (const model of result.missingModels) {
+        process.stdout.write(`- ${model.id}: ${model.url}\n`);
+      }
     }
     return;
   }
@@ -149,6 +174,8 @@ export async function main(argv = []) {
     let result;
     if (parsed.command === "doctor") {
       result = doctor(parsed.options);
+    } else if (parsed.command === "models") {
+      result = await downloadModels(parsed.options);
     } else if (parsed.command === "uninstall") {
       result = uninstallPlugin(parsed.options);
     } else {

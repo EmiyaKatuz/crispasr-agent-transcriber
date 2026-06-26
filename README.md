@@ -21,13 +21,16 @@ Give it a local audio or video file. It:
 3. Extracts audio from video with ffmpeg when needed.
 4. Calls CrispASR's `/v1/audio/transcriptions` endpoint.
 5. Writes the transcript and metadata to disk.
+6. For video understanding, captures synchronized keyframes and writes an
+   agent-readable manifest.
 
 Everything runs on your machine. Media never leaves it.
 
 ## Quick install for Codex
 
 The plugin includes the Codex Skill, command-line tool, and MCP server. Media
-stays on your computer. Model files are never downloaded automatically.
+stays on your computer. Model files are never downloaded during install/update;
+use the explicit `models` command when you want the installer to fetch them.
 
 ### 1. Install prerequisites
 
@@ -57,14 +60,19 @@ The installer:
 
 ### 3. Add the local models
 
-When a model is missing, the installer prints its official source and stops.
-Download the three files listed under [Required models](#required-models) into:
+Download the recommended local English, Chinese, and language-detection bundle:
+
+```powershell
+npx @emiyakatuz/crispasr-agent-transcriber@latest models
+```
+
+The command downloads only approved GGUF files into:
 
 ```text
 ~/plugins/crispasr-agent-transcriber/models/
 ```
 
-Then verify the complete installation:
+Then verify the installation:
 
 ```powershell
 npx @emiyakatuz/crispasr-agent-transcriber@latest doctor
@@ -107,9 +115,7 @@ After installation, you can run the transcription script without Codex:
 Set-Location (Join-Path $HOME "plugins\crispasr-agent-transcriber")
 uv run python scripts/transcribe.py sample.mp4 --profile auto `
   --manage-server `
-  --english-model models\cohere-transcribe.gguf `
-  --chinese-model models\qwen3-asr-1.7b-q4_k.gguf `
-  --lid-backend firered --lid-model models\firered-lid-q2_k.gguf `
+  --models-dir models `
   --format verbose_json
 ```
 
@@ -134,28 +140,33 @@ Registry, and cross-agent distribution.
 
 ## Required models
 
-This tool does **not** download models automatically. Download these three
-GGUF files and keep them in a local directory (the repo's `models/` folder
-works well):
+Install/update never downloads models. Use the explicit `models` command or
+download these three recommended GGUF files into a local directory such as
+`models/`:
 
 | Purpose | Local file | Variant / size | Model page | File page |
 |---|---|---|---|---|
-| English ASR | `cohere-transcribe.gguf` | F16, ~3.85 GB | [Cohere Transcribe 03-2026 GGUF](https://huggingface.co/cstr/cohere-transcribe-03-2026-GGUF) | [Download](https://huggingface.co/cstr/cohere-transcribe-03-2026-GGUF/blob/main/cohere-transcribe.gguf) |
-| Chinese ASR | `qwen3-asr-1.7b-q4_k.gguf` | Q4_K, ~1.33 GB | [Qwen3-ASR 1.7B GGUF](https://huggingface.co/cstr/qwen3-asr-1.7b-GGUF) | [Download](https://huggingface.co/cstr/qwen3-asr-1.7b-GGUF/blob/main/qwen3-asr-1.7b-q4_k.gguf) |
-| Language detection | `firered-lid-q2_k.gguf` | Q2_K, ~350 MB | [FireRed LID GGUF](https://huggingface.co/cstr/firered-lid-GGUF) | [Download](https://huggingface.co/cstr/firered-lid-GGUF/blob/main/firered-lid-q2_k.gguf) |
+| English ASR | `cohere-transcribe-q4_k.gguf` | Q4_K, smaller default | [Cohere Transcribe 03-2026 GGUF](https://huggingface.co/cstr/cohere-transcribe-03-2026-GGUF) | [Download](https://huggingface.co/cstr/cohere-transcribe-03-2026-GGUF/blob/main/cohere-transcribe-q4_k.gguf) |
+| Chinese ASR | `qwen3-asr-1.7b-q4_k.gguf` | Q4_K, smaller default | [Qwen3-ASR 1.7B GGUF](https://huggingface.co/cstr/qwen3-asr-1.7b-GGUF) | [Download](https://huggingface.co/cstr/qwen3-asr-1.7b-GGUF/blob/main/qwen3-asr-1.7b-q4_k.gguf) |
+| Language detection | `firered-lid-q4_k.gguf` | Q4_K default | [FireRed LID GGUF](https://huggingface.co/cstr/firered-lid-GGUF) | [Download](https://huggingface.co/cstr/firered-lid-GGUF/blob/main/firered-lid-q4_k.gguf) |
 
-The English F16 file is the highest-quality Cohere option and preserves the
-existing default. The same repository also provides smaller quantized files,
-including `cohere-transcribe-q4_k.gguf`; pass its exact local path if you choose
-that variant. All three upstream model families are Apache 2.0 licensed.
+Optional model IDs include `english-q5-0`, `english-q5-1`, `english-q6`,
+`english-q8`, `english-f16`, `chinese-q8`, `chinese-f16`, `lid-q2`, `lid-q8`,
+and `lid-f16`. Download a specific option with:
+
+```powershell
+npx @emiyakatuz/crispasr-agent-transcriber@latest models --model-id english-q8
+```
+
+All three upstream model families are Apache 2.0 licensed.
 
 For automatic English/Chinese routing, pass both ASR paths. The language probe
 runs first, and only the matching model is loaded:
 
 ```powershell
---english-model models\cohere-transcribe.gguf
+--english-model models\cohere-transcribe-q4_k.gguf
 --chinese-model models\qwen3-asr-1.7b-q4_k.gguf
---lid-backend firered --lid-model models\firered-lid-q2_k.gguf
+--lid-backend firered --lid-model models\firered-lid-q4_k.gguf
 ```
 
 For an explicit `english` or `chinese` profile, `--model` remains available as
@@ -209,9 +220,7 @@ clear error asking you to re-run with `--profile english` or `--profile chinese`
 uv run python scripts/transcribe.py sample.wav `
   --profile auto `
   --manage-server `
-  --english-model models\cohere-transcribe.gguf `
-  --chinese-model models\qwen3-asr-1.7b-q4_k.gguf `
-  --lid-backend firered --lid-model models\firered-lid-q2_k.gguf `
+  --models-dir models `
   --format srt `
   --out-dir outputs
 ```
@@ -223,7 +232,7 @@ Add `--keep-server` to leave the server running after transcription.
 ```powershell
 # Terminal 1 -- start the server
 crispasr --server --backend cohere `
-  -m models\cohere-transcribe.gguf `
+  -m models\cohere-transcribe-q4_k.gguf `
   --port 8080
 
 # Terminal 2 -- transcribe
@@ -257,7 +266,7 @@ is deleted when transcription finishes.
 
 ```
 --profile auto|english|chinese
---format text|verbose_json|srt|vtt
+--format text|verbose_json|srt|vtt|json
 --out-dir PATH
 --server-url URL
 --allow-remote-server
@@ -266,6 +275,7 @@ is deleted when transcription finishes.
 --model PATH               Local GGUF override for an explicit profile
 --english-model PATH       Cohere model selected after English detection
 --chinese-model PATH       Qwen3-ASR model selected after Chinese detection
+--models-dir PATH          Directory containing approved local GGUF models
 --allow-model-auto-download
 --lid-model PATH           Local LID model path
 --lid-backend firered|silero|ecapa|whisper
@@ -285,6 +295,10 @@ is deleted when transcription finishes.
 --install-crispasr
 --update-crispasr
 --crispasr-status
+--list-models
+--download-models
+--model-id MODEL_ID
+--overwrite-models
 ```
 
 ## MCP server
@@ -301,8 +315,12 @@ Exposed tools:
 | `crispasr_health` | Check CrispASR server health |
 | `crispasr_backends` | List available backends |
 | `crispasr_detect_language` | Run language detection on a file |
+| `crispasr_list_models` | List approved model choices and local install status |
+| `crispasr_download_models` | Explicitly download approved model files |
+| `crispasr_resolve_model_paths` | Return recommended local model paths |
 | `transcribe_audio` | Transcribe an audio file |
 | `transcribe_video` | Transcribe a video file |
+| `understand_video` | Transcribe a video, capture synced keyframes, and return an agent context |
 | `transcribe_folder` | Batch-transcribe a folder |
 
 ## Security model
@@ -315,9 +333,10 @@ Exposed tools:
 - **No shell injection.** ffmpeg is called with argument lists and
   `shell=False`. No user-controlled strings are interpolated into shell
   commands.
-- **No model downloads by default.** CrispASR model auto-download (`-m auto`)
-  requires `--allow-model-auto-download`. The same guard applies to language
-  detection models.
+- **No implicit model downloads.** Install/update never downloads models, and
+  CrispASR model auto-download (`-m auto`) requires
+  `--allow-model-auto-download`. The `models` command and
+  `crispasr_download_models` tool download only allowlisted Hugging Face files.
 - **Temporary files are cleaned up.** Converted WAV files and LID probe
   windows are deleted when transcription finishes.
 - **Binary downloads are explicit.** CrispASR binary installs only from the
@@ -327,6 +346,9 @@ Exposed tools:
 - **Narrow installer writes.** The installer manages only its plugin directory
   and the named Personal marketplace entry. Updates preserve local models,
   binaries, and outputs.
+- **Generated understanding stays local.** Video keyframes, manifests, and
+  agent context files are written under the selected output directory and are
+  ignored by Git.
 
 ## Verify
 

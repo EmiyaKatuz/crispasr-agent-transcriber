@@ -26,7 +26,11 @@ def test_mcp_server_initializes_and_lists_tools() -> None:
         "crispasr_health",
         "crispasr_backends",
         "crispasr_detect_language",
+        "crispasr_list_models",
+        "crispasr_download_models",
+        "crispasr_resolve_model_paths",
         "transcribe_audio",
         "transcribe_video",
+        "understand_video",
         "transcribe_folder",
     }

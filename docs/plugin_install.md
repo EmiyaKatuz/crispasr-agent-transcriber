@@ -14,8 +14,16 @@ The installer downloads and verifies the matching plugin release, installs
 Python/MCP dependencies, selects the best CrispASR build for the machine, and
 adds the Personal marketplace entry without replacing existing plugins.
 
-Models are deliberately not downloaded. Place the three files listed below in
-`$HOME\plugins\crispasr-agent-transcriber\models`, then run:
+Models are deliberately not downloaded during install/update. To fetch the
+approved recommended bundle, run:
+
+```powershell
+npx @emiyakatuz/crispasr-agent-transcriber@latest models
+```
+
+This downloads `cohere-transcribe-q4_k.gguf`,
+`qwen3-asr-1.7b-q4_k.gguf`, and `firered-lid-q4_k.gguf` into
+`$HOME\plugins\crispasr-agent-transcriber\models`. Then run:
 
 ```powershell
 npx @emiyakatuz/crispasr-agent-transcriber@latest doctor
@@ -68,9 +76,9 @@ Place these in the `models/` directory:
 
 | Purpose | File | Source |
 |---|---|---|
-| English ASR | `cohere-transcribe.gguf` | [Cohere Transcribe 03-2026 GGUF](https://huggingface.co/cstr/cohere-transcribe-03-2026-GGUF) |
+| English ASR | `cohere-transcribe-q4_k.gguf` | [Cohere Transcribe 03-2026 GGUF](https://huggingface.co/cstr/cohere-transcribe-03-2026-GGUF) |
 | Chinese ASR | `qwen3-asr-1.7b-q4_k.gguf` | [Qwen3-ASR GGUF](https://huggingface.co/cstr/qwen3-asr-1.7b-GGUF) |
-| Language detection | `firered-lid-q2_k.gguf` | [FireRed LID GGUF](https://huggingface.co/cstr/firered-lid-GGUF) |
+| Language detection | `firered-lid-q4_k.gguf` | [FireRed LID GGUF](https://huggingface.co/cstr/firered-lid-GGUF) |
 
 ### 5. Register the personal marketplace entry
 
@@ -152,5 +160,5 @@ uv run --extra mcp python -m crispasr_mcp.server
 ### Running the CLI
 
 ```powershell
-uv run python scripts/transcribe.py file.mp4 --profile auto --manage-server --english-model models\cohere-transcribe.gguf --chinese-model models\qwen3-asr-1.7b-q4_k.gguf --lid-backend firered --lid-model models\firered-lid-q2_k.gguf --format srt
+uv run python scripts/transcribe.py file.mp4 --profile auto --manage-server --models-dir models --format srt
 ```

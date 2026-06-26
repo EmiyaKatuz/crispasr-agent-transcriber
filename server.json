@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.EmiyaKatuz/crispasr-agent-transcriber",
   "title": "CrispASR Agent Transcriber",
-  "description": "Transcribe local audio and video with CrispASR and local models only.",
+  "description": "Transcribe and understand local audio/video with CrispASR and local models only.",
   "repository": {
     "url": "https://github.com/EmiyaKatuz/crispasr-agent-transcriber",
     "source": "github"

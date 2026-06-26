@@ -13,7 +13,7 @@ test("help and version are available through the bin entry point", () => {
     shell: false,
   });
   assert.equal(help.status, 0);
-  assert.match(help.stdout, /install.*update.*doctor.*uninstall/s);
+  assert.match(help.stdout, /install.*update.*models.*doctor.*uninstall/s);
 
   const version = spawnSync(process.execPath, [cliPath, "--version"], {
     encoding: "utf8",
@@ -21,6 +21,20 @@ test("help and version are available through the bin entry point", () => {
   });
   assert.equal(version.status, 0);
   assert.equal(version.stdout.trim(), "0.3.5");
+});
+
+test("models dry run emits one JSON object", () => {
+  const report = spawnSync(
+    process.execPath,
+    [cliPath, "models", "--dry-run", "--json", "--model-id", "english-q4"],
+    { encoding: "utf8", shell: false },
+  );
+  assert.equal(report.status, 0);
+  const value = JSON.parse(report.stdout);
+  assert.equal(value.ok, true);
+  assert.equal(value.command, "models");
+  assert.equal(value.dryRun, true);
+  assert.equal(value.plan.length, 1);
 });
 
 test("doctor emits one JSON object", () => {

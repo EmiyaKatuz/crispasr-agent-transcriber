@@ -7,22 +7,23 @@ https://github.com/CrispStrobe/CrispASR
 This project expects a local `crispasr` executable. It does not bundle CrispASR or model files.
 Use `--install-crispasr` to download the latest binary automatically (auto-detects GPU).
 
-## Recommended v0.1 models
+## Recommended models
 
 | Purpose | File | Backend |
 |---|---|---|
-| English ASR | `cohere-transcribe.gguf` | `cohere` |
+| English ASR | `cohere-transcribe-q4_k.gguf` | `cohere` |
 | Chinese ASR | `qwen3-asr-1.7b-q4_k.gguf` | `qwen3-1.7b` |
-| Language detection | `firered-lid-q2_k.gguf` | `firered` |
+| Language detection | `firered-lid-q4_k.gguf` | `firered` |
 
-Place model files in the `models/` directory at the repository root.
+Place model files in the `models/` directory at the repository root, or run
+`crispasr-agent-transcribe --download-models`.
 
 ## Start one server
 
 English (Cohere Transcribe):
 
 ```powershell
-crispasr --server --backend cohere -m models\cohere-transcribe.gguf --port 8080
+crispasr --server --backend cohere -m models\cohere-transcribe-q4_k.gguf --port 8080
 ```
 
 Chinese (Qwen3-ASR 1.7B):

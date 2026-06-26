@@ -24,6 +24,48 @@ def test_auto_profile_refuses_implicit_lid_model_download(tmp_path, capsys) -> N
 
 
 
+def test_list_models_flag(tmp_path, capsys) -> None:
+    code = main(["--list-models", "--models-dir", str(tmp_path)])
+    captured = capsys.readouterr()
+    assert code == 0
+    assert "english-q4" in captured.out
+    assert "Recommended bundle ready: no" in captured.out
+
+
+def test_download_models_flag(monkeypatch, tmp_path, capsys) -> None:
+    calls = []
+
+    def fake_download_models(model_ids=None, *, models_dir="models", overwrite=False):
+        calls.append((model_ids, models_dir, overwrite))
+        return {
+            "models_dir": models_dir,
+            "results": [
+                {
+                    "id": "english-q4",
+                    "path": str(tmp_path / "cohere-transcribe-q4_k.gguf"),
+                    "downloaded": True,
+                }
+            ],
+            "ready": False,
+        }
+
+    monkeypatch.setattr("crispasr_agent_transcriber.cli.download_models", fake_download_models)
+    code = main(
+        [
+            "--download-models",
+            "--models-dir",
+            str(tmp_path),
+            "--model-id",
+            "english-q4",
+            "--overwrite-models",
+        ]
+    )
+    captured = capsys.readouterr()
+    assert code == 0
+    assert "downloaded: english-q4" in captured.out
+    assert calls == [(["english-q4"], str(tmp_path), True)]
+
+
 def test_install_crispasr_flag(monkeypatch, capsys) -> None:
     calls = []
 

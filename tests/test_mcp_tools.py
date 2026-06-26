@@ -66,6 +66,44 @@ class TestCrispasrDetectLanguage:
         assert detection["detected_language"] == "zh"
 
 
+class TestCrispasrModels:
+    def test_list_models_reports_recommended_paths(self, tmp_path):
+        result = tools.crispasr_list_models(models_dir=str(tmp_path))
+        assert result["ok"] is True
+        assert result["ready"] is False
+        assert result["recommended_paths"]["english"].endswith("cohere-transcribe-q4_k.gguf")
+
+    def test_resolve_model_paths_reports_ready(self, tmp_path):
+        for filename in [
+            "cohere-transcribe-q4_k.gguf",
+            "qwen3-asr-1.7b-q4_k.gguf",
+            "firered-lid-q4_k.gguf",
+        ]:
+            (tmp_path / filename).write_bytes(b"model")
+
+        result = tools.crispasr_resolve_model_paths(models_dir=str(tmp_path))
+        assert result["ok"] is True
+        assert result["ready"] is True
+        assert result["english_model"].endswith("cohere-transcribe-q4_k.gguf")
+
+    def test_download_models_uses_allowlisted_downloader(self, tmp_path, monkeypatch):
+        calls = []
+
+        def fake_download_models(model_ids=None, *, models_dir="models", overwrite=False):
+            calls.append((model_ids, models_dir, overwrite))
+            return {"models_dir": models_dir, "results": [], "ready": False}
+
+        monkeypatch.setattr(tools, "download_models", fake_download_models)
+        result = tools.crispasr_download_models(
+            ["english-q4"],
+            models_dir=str(tmp_path),
+            overwrite=True,
+        )
+
+        assert result["ok"] is True
+        assert calls == [(["english-q4"], str(tmp_path), True)]
+
+
 class TestTranscribeAudio:
     def test_returns_error_for_missing_file(self):
         result = tools.transcribe_audio("nonexistent.mp3")
@@ -87,6 +125,38 @@ class TestTranscribeVideo:
         result = tools.transcribe_video("nonexistent.mp4")
         assert result["ok"] is False
         assert "error" in result
+
+
+class TestUnderstandVideo:
+    def test_returns_agent_payload(self, tmp_path, monkeypatch):
+        video = tmp_path / "demo.mp4"
+        video.write_bytes(b"fake")
+
+        class FakeResult:
+            manifest_path = tmp_path / "demo.video_understanding.json"
+            agent_context_path = tmp_path / "demo.agent_context.json"
+            transcript_path = tmp_path / "demo.json"
+            metadata_path = tmp_path / "demo.metadata.json"
+            keyframes = [{"timestamp_seconds": 1.0, "path": str(tmp_path / "frame.jpg")}]
+            agent_payload = {"type": "crispasr_video_understanding", "transcript_text": "hello"}
+
+        calls = []
+
+        def fake_run_video_understanding(*args, **kwargs):
+            calls.append((args, kwargs))
+            return FakeResult()
+
+        monkeypatch.setattr(tools, "run_video_understanding", fake_run_video_understanding)
+        result = tools.understand_video(
+            str(video),
+            profile="english",
+            models_dir=str(tmp_path / "models"),
+        )
+
+        assert result["ok"] is True
+        assert result["agent_payload"]["type"] == "crispasr_video_understanding"
+        assert result["manifest_path"].endswith("demo.video_understanding.json")
+        assert calls[0][1]["profile_name"] == "english"
 
 
 class TestTranscribeFolder:

@@ -6,13 +6,13 @@ from crispasr_agent_transcriber.workflow import _select_model_for_profile
 def test_auto_routing_selects_profile_specific_model() -> None:
     options = {
         "model": None,
-        "english_model": "models/cohere-transcribe.gguf",
+        "english_model": "models/cohere-transcribe-q4_k.gguf",
         "chinese_model": "models/qwen3-asr-1.7b-q4_k.gguf",
     }
 
     assert (
         _select_model_for_profile(profile_name="english", **options)
-        == "models/cohere-transcribe.gguf"
+        == "models/cohere-transcribe-q4_k.gguf"
     )
     assert (
         _select_model_for_profile(profile_name="chinese", **options)

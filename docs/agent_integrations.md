@@ -76,8 +76,16 @@ The MCP tools accept explicit local paths for:
 Keep these files in a stable local directory. Do not place them inside a
 temporary plugin cache because client updates may replace that cache.
 
+The MCP server also exposes `crispasr_list_models`,
+`crispasr_download_models`, and `crispasr_resolve_model_paths` so agents can
+help users choose and install the approved local model bundle.
+
+For video understanding, use `understand_video`. It returns a compact
+`agent_payload` and writes a full transcript/keyframe manifest plus synchronized
+JPEG screenshots under the selected output directory.
+
 ## Compatibility contract
 
 Other agents only need to support MCP stdio. They do not need to understand
-Codex Skills or `.codex-plugin/plugin.json`. The six MCP tools and their
-structured responses are the cross-agent API.
+Codex Skills or `.codex-plugin/plugin.json`. The MCP tools and their structured
+responses are the cross-agent API.

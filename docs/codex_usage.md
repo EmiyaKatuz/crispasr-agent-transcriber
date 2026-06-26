@@ -6,9 +6,7 @@ Auto-route a file through the matching local backend:
 
 ```powershell
 uv run python scripts/transcribe.py .\meeting.mp4 --profile auto --manage-server `
-  --english-model models\cohere-transcribe.gguf `
-  --chinese-model models\qwen3-asr-1.7b-q4_k.gguf `
-  --lid-backend firered --lid-model models\firered-lid-q2_k.gguf `
+  --models-dir models `
   --format verbose_json
 ```
 
@@ -21,7 +19,9 @@ uv run python scripts/transcribe.py .\lecture.wav --profile chinese --manage-ser
 Force English:
 
 ```powershell
-uv run python scripts/transcribe.py .\podcast.mp3 --profile english --manage-server --model models\cohere-transcribe.gguf --format srt
+uv run python scripts/transcribe.py .\podcast.mp3 --profile english --manage-server --model models\cohere-transcribe-q4_k.gguf --format srt
 ```
 
 The transcript path and metadata path are printed after a successful run.
+For video understanding through MCP, use `understand_video`; it writes a
+manifest, an agent context JSON file, and synchronized keyframe screenshots.
