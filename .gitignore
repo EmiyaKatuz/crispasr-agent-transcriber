@@ -6,6 +6,7 @@ __pycache__/
 node_modules/
 *.tgz
 .codegraph/
+dist/
 
 # Local media, models, transcripts, and temporary outputs.
 models/

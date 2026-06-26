@@ -12,7 +12,7 @@ import { doctor, downloadModels, installPlugin, uninstallPlugin } from "../src/i
 import { MODEL_SPECS } from "../src/constants.js";
 import { InstallerError } from "../src/errors.js";
 
-const VERSION = "0.3.5";
+const VERSION = "0.4.0";
 const ARCHIVE_NAME = `crispasr-agent-transcriber-plugin-${VERSION}.zip`;
 
 function createBundle(filePath, readmeText) {
